@@ -1,17 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8faf9;
+  --background: #f5f7f6;
   --foreground: #0f1f1a;
-  --kumbu-50: #f3f8f6;
-  --kumbu-100: #e3eee9;
-  --kumbu-200: #c8ddd4;
-  --kumbu-400: #7aa393;
-  --kumbu-500: #5a8776;
-  --kumbu-600: #3f6f5c;
-  --kumbu-700: #335849;
-  --kumbu-800: #2b483c;
-  --kumbu-900: #243c32;
+  --kumbu-50: #f0f5f2;
+  --kumbu-100: #dceae3;
+  --kumbu-200: #b8d4c5;
+  --kumbu-300: #8fbda8;
+  --kumbu-400: #6aa48d;
+  --kumbu-500: #4d8b74;
+  --kumbu-600: #3a7260;
+  --kumbu-700: #2f5c4d;
+  --kumbu-800: #264a3e;
+  --kumbu-900: #1e3d33;
+  --kumbu-950: #142b24;
 }
 
 @theme inline {
@@ -20,12 +22,14 @@
   --color-kumbu-50: var(--kumbu-50);
   --color-kumbu-100: var(--kumbu-100);
   --color-kumbu-200: var(--kumbu-200);
+  --color-kumbu-300: var(--kumbu-300);
   --color-kumbu-400: var(--kumbu-400);
   --color-kumbu-500: var(--kumbu-500);
   --color-kumbu-600: var(--kumbu-600);
   --color-kumbu-700: var(--kumbu-700);
   --color-kumbu-800: var(--kumbu-800);
   --color-kumbu-900: var(--kumbu-900);
+  --color-kumbu-950: var(--kumbu-950);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -34,8 +38,41 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth fade-in for page content */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in {
+  animation: fadeIn 0.22s ease-out forwards;
+}
+
+/* Progress bar fill animation */
+@keyframes progressFill {
+  from { width: 0%; }
+}
+.animate-progress {
+  animation: progressFill 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
