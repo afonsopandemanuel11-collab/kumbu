@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createClient } from "@/lib/supabase/client";
+import { signInAction } from "@/app/actions/auth";
 
 export function LoginForm() {
   const router = useRouter();
@@ -25,37 +25,14 @@ export function LoginForm() {
     setError(null);
     setLoading(true);
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
-      setError(
-        "Configuração em falta: As variáveis NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY não estão configuradas na Vercel.",
-      );
-      setLoading(false);
-      return;
-    }
-
     try {
-      const supabase = createClient();
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
+      const res = await signInAction({
+        email,
         password,
       });
 
-      if (signInError) {
-        console.error("Erro no signIn Supabase:", signInError);
-        let msg = signInError.message;
-        if (
-          msg.includes("Invalid login credentials") ||
-          msg.includes("invalid_grant")
-        ) {
-          msg = "Email ou palavra-passe incorrectos. Tenta novamente.";
-        } else if (msg.includes("Email not confirmed")) {
-          msg =
-            "O teu email ainda não foi confirmado. Verifica a tua caixa de correio para confirmar a conta antes de entrar.";
-        }
-        setError(msg);
+      if (res.error) {
+        setError(res.error);
         setLoading(false);
         return;
       }
@@ -63,12 +40,12 @@ export function LoginForm() {
       router.push(redirectTo);
       router.refresh();
     } catch (err: unknown) {
-      console.error("Erro inesperado no login:", err);
-      const msg =
+      console.error("Erro no login:", err);
+      setError(
         err instanceof Error
           ? err.message
-          : "Erro de ligação ao servidor. Tenta novamente.";
-      setError(msg);
+          : "Erro de ligação ao servidor. Tenta novamente.",
+      );
       setLoading(false);
     }
   }

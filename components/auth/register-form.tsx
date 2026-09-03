@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createClient } from "@/lib/supabase/client";
+import { signUpAction } from "@/app/actions/auth";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -26,74 +26,24 @@ export function RegisterForm() {
     setSuccess(null);
     setLoading(true);
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
-      setError(
-        "Configuração em falta: As variáveis NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY não estão configuradas na Vercel (Project Settings > Environment Variables).",
-      );
-      setLoading(false);
-      return;
-    }
-
     try {
-      const supabase = createClient();
-      const redirectUrl =
-        typeof window !== "undefined"
-          ? `${window.location.origin}/auth/callback`
-          : undefined;
+      const origin =
+        typeof window !== "undefined" ? window.location.origin : undefined;
 
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: email.trim(),
+      const res = await signUpAction({
+        email,
         password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            full_name: fullName.trim(),
-          },
-        },
+        fullName,
+        origin,
       });
 
-      if (signUpError) {
-        console.error("Erro no signUp Supabase:", signUpError);
-        let msg = signUpError.message;
-        if (msg.includes("User already registered") || msg.includes("already registered")) {
-          msg = "Este email já se encontra registado. Tenta iniciar sessão ou recuperar a palavra-passe.";
-        } else if (msg.includes("Password should be at least")) {
-          msg = "A palavra-passe deve ter pelo menos 6 caracteres.";
-        } else if (msg.toLowerCase().includes("rate limit")) {
-          msg = "Limite de tentativas excedido. Aguarda alguns minutos e tenta novamente.";
-        } else if (msg.includes("Signups not allowed")) {
-          msg = "Os novos registos estão desativados nas configurações de autenticação do Supabase.";
-        } else if (msg.includes("Database error saving new user")) {
-          msg = "Erro ao criar utilizador na base de dados (trigger do Supabase). Verifica a tabela profiles.";
-        }
-        setError(msg);
+      if (res.error) {
+        setError(res.error);
         setLoading(false);
         return;
       }
 
-      // Se o utilizador já existe com confirmação por email activa, o Supabase devolve identities vazio
-      if (
-        signUpData?.user &&
-        signUpData.user.identities &&
-        signUpData.user.identities.length === 0
-      ) {
-        setError("Este email já se encontra registado. Tenta iniciar sessão.");
-        setLoading(false);
-        return;
-      }
-
-      // Se devolveu sessão directamente (confirmação por email desactivada no Supabase)
-      if (signUpData?.session) {
-        router.push("/");
-        router.refresh();
-        return;
-      }
-
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (sessionData.session) {
+      if (res.hasSession) {
         router.push("/");
         router.refresh();
         return;
@@ -103,12 +53,12 @@ export function RegisterForm() {
         "Conta criada com sucesso! Se a confirmação por email estiver activa, verifica a tua caixa de entrada para confirmar o registo antes de entrar.",
       );
     } catch (err: unknown) {
-      console.error("Erro inesperado no registo:", err);
-      const msg =
+      console.error("Erro no registo:", err);
+      setError(
         err instanceof Error
           ? err.message
-          : "Erro de ligação. Verifica as variáveis de ambiente na Vercel.";
-      setError(msg);
+          : "Erro de ligação ao servidor. Tenta novamente.",
+      );
     } finally {
       setLoading(false);
     }
