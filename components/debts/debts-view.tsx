@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Icon } from "@/components/ui/icons";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
 import { DebtModal } from "@/components/debts/debt-modal";
@@ -18,7 +18,10 @@ type DebtsViewProps = {
   userId: string;
 };
 
-const statusBadges: Record<DebtStatus, { label: string; variant: "default" | "success" | "danger" | "warning" | "info" | "neutral" }> = {
+const statusBadges: Record<
+  DebtStatus,
+  { label: string; variant: "default" | "success" | "danger" | "warning" | "info" | "neutral" }
+> = {
   OPEN: { label: "Pendente", variant: "warning" },
   PARTIALLY_PAID: { label: "Parcial", variant: "info" },
   PAID: { label: "Liquidada", variant: "success" },
@@ -45,195 +48,225 @@ export function DebtsView({ initialDebts, accounts, userId }: DebtsViewProps) {
 
   const currentList = activeTab === "I_OWE" ? iOweDebts : owedToMeDebts;
 
-  function handleCreate() {
-    setSelectedDebt(null);
-    setDebtModalOpen(true);
-  }
-
-  function handleEdit(debt: Debt) {
-    setSelectedDebt(debt);
-    setDebtModalOpen(true);
-  }
-
-  function handlePay(debt: Debt) {
-    setSelectedDebt(debt);
-    setPayModalOpen(true);
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-kumbu-900">
-            D�vidas & Empr�stimos
+            Dívidas & Empréstimos
           </h1>
           <p className="mt-0.5 text-sm text-kumbu-500">
-            Controla os valores que deves e os valores que terceiros t�m a pagar-te.
+            Controla o que deves e o que tens a receber.
           </p>
         </div>
-        <Button onClick={handleCreate} className="gap-1.5 self-start sm:self-auto">
-          <span>+</span> Registar D�vida
+        <Button
+          onClick={() => {
+            setSelectedDebt(null);
+            setDebtModalOpen(true);
+          }}
+          className="gap-1.5 self-start"
+          size="sm"
+        >
+          <Icon name="plus" className="w-4 h-4" />
+          Registar Dívida
         </Button>
       </div>
 
-      {/* Summary Highlights */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div
+      {/* Summary tiles — clickable tabs */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          type="button"
           onClick={() => setActiveTab("I_OWE")}
-          className={`cursor-pointer rounded-2xl border p-4 transition-all ${
+          className={`rounded-2xl border p-4 text-left transition-all ${
             activeTab === "I_OWE"
-              ? "border-rose-300 bg-rose-50/50 shadow-xs"
+              ? "border-rose-200 bg-rose-50 shadow-sm"
               : "border-kumbu-100 bg-white hover:border-kumbu-200"
           }`}
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-rose-700">
-              Eu Devo
-            </span>
-            <span className="text-base">??</span>
-          </div>
-          <p className="mt-2 text-2xl font-extrabold text-rose-800">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-rose-700">
+            Eu Devo
+          </p>
+          <p className="mt-2 text-xl font-extrabold text-rose-800 tabular-nums">
             {formatCurrency(totalIOwe)}
           </p>
           <p className="mt-1 text-xs text-rose-600">
-            {iOweDebts.filter((d) => d.status !== "PAID" && d.status !== "CANCELLED").length} d�vida(s) pendente(s)
+            {iOweDebts.filter((d) => d.status !== "PAID" && d.status !== "CANCELLED").length}{" "}
+            pendente(s)
           </p>
-        </div>
+        </button>
 
-        <div
+        <button
+          type="button"
           onClick={() => setActiveTab("OWED_TO_ME")}
-          className={`cursor-pointer rounded-2xl border p-4 transition-all ${
+          className={`rounded-2xl border p-4 text-left transition-all ${
             activeTab === "OWED_TO_ME"
-              ? "border-emerald-300 bg-emerald-50/50 shadow-xs"
+              ? "border-emerald-200 bg-emerald-50 shadow-sm"
               : "border-kumbu-100 bg-white hover:border-kumbu-200"
           }`}
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">
-              Devem-me
-            </span>
-            <span className="text-base">??</span>
-          </div>
-          <p className="mt-2 text-2xl font-extrabold text-emerald-800">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-700">
+            Devem-me
+          </p>
+          <p className="mt-2 text-xl font-extrabold text-emerald-800 tabular-nums">
             {formatCurrency(totalOwedToMe)}
           </p>
           <p className="mt-1 text-xs text-emerald-600">
-            {owedToMeDebts.filter((d) => d.status !== "PAID" && d.status !== "CANCELLED").length} valor(es) a receber
+            {owedToMeDebts.filter((d) => d.status !== "PAID" && d.status !== "CANCELLED").length}{" "}
+            a receber
           </p>
-        </div>
-      </div>
-
-      {/* Tabs Switcher */}
-      <div className="flex border-b border-kumbu-100 pb-2">
-        <button
-          type="button"
-          onClick={() => setActiveTab("I_OWE")}
-          className={`px-4 py-2 text-sm font-semibold transition-colors ${
-            activeTab === "I_OWE"
-              ? "border-b-2 border-kumbu-900 text-kumbu-900"
-              : "text-kumbu-500 hover:text-kumbu-800"
-          }`}
-        >
-          Eu Devo ({iOweDebts.length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("OWED_TO_ME")}
-          className={`px-4 py-2 text-sm font-semibold transition-colors ${
-            activeTab === "OWED_TO_ME"
-              ? "border-b-2 border-kumbu-900 text-kumbu-900"
-              : "text-kumbu-500 hover:text-kumbu-800"
-          }`}
-        >
-          Devem-me ({owedToMeDebts.length})
         </button>
       </div>
 
-      {/* Debt List or Empty State */}
+      {/* Tab labels */}
+      <div className="flex gap-4 border-b border-kumbu-100">
+        {(["I_OWE", "OWED_TO_ME"] as const).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            className={`pb-2.5 text-sm font-semibold transition-colors ${
+              activeTab === tab
+                ? "border-b-2 border-kumbu-700 text-kumbu-900"
+                : "text-kumbu-400 hover:text-kumbu-700"
+            }`}
+          >
+            {tab === "I_OWE" ? "Eu Devo" : "Devem-me"}
+            <span className="ml-1.5 text-[11px] text-kumbu-400">
+              ({(tab === "I_OWE" ? iOweDebts : owedToMeDebts).length})
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* List */}
       {currentList.length === 0 ? (
         <EmptyState
+          icon={activeTab === "I_OWE" ? "🤝" : "💰"}
           title={
             activeTab === "I_OWE"
-              ? "N�o tens d�vidas a pagar registadas."
-              : "N�o tens valores a receber registados."
+              ? "Nenhuma dívida a pagar registada."
+              : "Nenhum valor a receber registado."
           }
           description={
             activeTab === "I_OWE"
-              ? "Mant�m as tuas finan�as organizadas registando sempre que contra�res uma obriga��o."
-              : "Regista empr�stimos concedidos a amigos ou colegas para n�o te esqueceres."
+              ? "Regista sempre que contraíres uma obrigação financeira."
+              : "Regista empréstimos concedidos para não te esqueceres."
           }
-          actionLabel="+ Registar d�vida"
-          onAction={handleCreate}
+          actionLabel="+ Registar dívida"
+          onAction={() => {
+            setSelectedDebt(null);
+            setDebtModalOpen(true);
+          }}
         />
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {currentList.map((debt) => {
             const badge = statusBadges[debt.status] ?? statusBadges.OPEN;
-            const isSettled = debt.status === "PAID" || debt.status === "CANCELLED";
+            const isSettled =
+              debt.status === "PAID" || debt.status === "CANCELLED";
+            const paidPct =
+              debt.original_amount > 0
+                ? Math.min(
+                    100,
+                    Math.round(
+                      ((debt.original_amount - debt.remaining_amount) /
+                        debt.original_amount) *
+                        100,
+                    ),
+                  )
+                : 0;
 
             return (
-              <Card
+              <div
                 key={debt.id}
-                className="flex flex-col justify-between space-y-3 transition-all hover:border-kumbu-300"
+                className="rounded-2xl border border-kumbu-100 bg-white p-4 space-y-3 hover:border-kumbu-200 transition-colors"
               >
-                <div>
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h3 className="font-bold text-kumbu-900">{debt.person_name}</h3>
-                      <p className="text-xs text-kumbu-500">
-                        {debt.due_date ? `Vence a: ${formatDate(debt.due_date)}` : "Sem data limite"}
-                      </p>
-                    </div>
-                    <Badge variant={badge.variant}>{badge.label}</Badge>
-                  </div>
-
-                  {debt.description && (
-                    <p className="mt-2 text-xs text-kumbu-500 line-clamp-2">
-                      {debt.description}
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-semibold text-kumbu-900">
+                      {debt.person_name}
                     </p>
-                  )}
+                    <p className="text-xs text-kumbu-400">
+                      {debt.due_date
+                        ? `Vence a ${formatDate(debt.due_date)}`
+                        : "Sem prazo definido"}
+                    </p>
+                  </div>
+                  <Badge variant={badge.variant} size="sm">
+                    {badge.label}
+                  </Badge>
+                </div>
 
-                  <div className="mt-3 rounded-xl bg-kumbu-50 p-3 space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-kumbu-500">Valor Restante:</span>
-                      <span className="font-bold text-kumbu-900">
-                        {formatCurrency(debt.remaining_amount, debt.currency)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-[11px] text-kumbu-400">
-                      <span>Valor Original:</span>
-                      <span>{formatCurrency(debt.original_amount, debt.currency)}</span>
-                    </div>
+                {debt.description && (
+                  <p className="text-xs text-kumbu-500 line-clamp-2">
+                    {debt.description}
+                  </p>
+                )}
+
+                <div className="rounded-xl bg-kumbu-50 px-3 py-2.5 space-y-0.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-kumbu-500">Restante</span>
+                    <span className="text-sm font-bold text-kumbu-900 tabular-nums">
+                      {formatCurrency(debt.remaining_amount, debt.currency)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-kumbu-400">Original</span>
+                    <span className="text-[11px] text-kumbu-400 tabular-nums">
+                      {formatCurrency(debt.original_amount, debt.currency)}
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between border-t border-kumbu-50 pt-3">
+                {/* Progress bar */}
+                {paidPct > 0 && (
+                  <div className="space-y-1">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-kumbu-100">
+                      <div
+                        className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                        style={{ width: `${paidPct}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-kumbu-400 text-right">
+                      {paidPct}% pago
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between border-t border-kumbu-50 pt-2.5">
                   <button
                     type="button"
-                    onClick={() => handleEdit(debt)}
-                    className="text-xs font-medium text-kumbu-500 hover:text-kumbu-900"
+                    onClick={() => {
+                      setSelectedDebt(debt);
+                      setDebtModalOpen(true);
+                    }}
+                    className="text-xs font-medium text-kumbu-400 hover:text-kumbu-700 transition-colors"
                   >
                     Editar
                   </button>
                   {!isSettled && (
                     <Button
                       size="sm"
-                      variant={activeTab === "I_OWE" ? "primary" : "secondary"}
-                      onClick={() => handlePay(debt)}
-                      className="text-xs py-1.5 h-8"
+                      variant={
+                        activeTab === "I_OWE" ? "primary" : "secondary"
+                      }
+                      onClick={() => {
+                        setSelectedDebt(debt);
+                        setPayModalOpen(true);
+                      }}
+                      className="h-8 text-xs px-3"
                     >
                       {activeTab === "I_OWE" ? "Pagar" : "Receber"}
                     </Button>
                   )}
                 </div>
-              </Card>
+              </div>
             );
           })}
         </div>
       )}
 
-      {/* Modals */}
       <DebtModal
         isOpen={debtModalOpen}
         onClose={() => setDebtModalOpen(false)}
@@ -241,7 +274,6 @@ export function DebtsView({ initialDebts, accounts, userId }: DebtsViewProps) {
         defaultType={activeTab}
         userId={userId}
       />
-
       <PayDebtModal
         isOpen={payModalOpen}
         onClose={() => setPayModalOpen(false)}

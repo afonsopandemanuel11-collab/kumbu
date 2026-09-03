@@ -43,7 +43,7 @@ export function SettingsForm({ initialProfile, userEmail, userId }: SettingsForm
       setMessage({ text: "Perfil actualizado com sucesso!", type: "success" });
       router.refresh();
     } catch {
-      setMessage({ text: "N�o foi poss�vel guardar as altera��es. Tenta novamente.", type: "error" });
+      setMessage({ text: "Não foi possível guardar as alterações. Tenta novamente.", type: "error" });
     } finally {
       setLoading(false);
     }
@@ -64,7 +64,7 @@ export function SettingsForm({ initialProfile, userEmail, userId }: SettingsForm
       setPasswordMessage({ text: "Palavra-passe alterada com sucesso!", type: "success" });
       setNewPassword("");
     } catch {
-      setPasswordMessage({ text: "N�o foi poss�vel actualizar a palavra-passe. Tenta novamente.", type: "error" });
+      setPasswordMessage({ text: "Não foi possível actualizar a palavra-passe. Tenta novamente.", type: "error" });
     } finally {
       setPasswordLoading(false);
     }
@@ -76,7 +76,7 @@ export function SettingsForm({ initialProfile, userEmail, userId }: SettingsForm
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Informa��es Pessoais</CardTitle>
+            <CardTitle>Informações Pessoais</CardTitle>
             <Badge variant="info">
               {initialProfile?.role === "ADMIN" ? "Administrador" : "Utilizador"}
             </Badge>
@@ -90,7 +90,7 @@ export function SettingsForm({ initialProfile, userEmail, userId }: SettingsForm
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" value={userEmail} disabled className="bg-kumbu-50 opacity-70" />
-            <p className="text-[11px] text-kumbu-400">O email de acesso n�o pode ser alterado directamente.</p>
+            <p className="text-[11px] text-kumbu-400">O email de acesso não pode ser alterado directamente.</p>
           </div>
 
           <div className="space-y-1.5">
@@ -112,8 +112,8 @@ export function SettingsForm({ initialProfile, userEmail, userId }: SettingsForm
               onChange={(e) => setCurrency(e.target.value)}
             >
               <option value="AOA">Kwanza Angolano (Kz / AOA)</option>
-              <option value="USD">D�lar Americano ($ / USD)</option>
-              <option value="EUR">Euro (� / EUR)</option>
+              <option value="USD">Dólar Americano ($ / USD)</option>
+              <option value="EUR">Euro (€ / EUR)</option>
               <option value="BRL">Real Brasileiro (R$ / BRL)</option>
             </Select>
           </div>
@@ -133,7 +133,7 @@ export function SettingsForm({ initialProfile, userEmail, userId }: SettingsForm
 
           <div className="pt-2">
             <Button type="submit" disabled={loading}>
-              {loading ? "A guardar..." : "Guardar Altera��es"}
+              {loading ? "A guardar..." : "Guardar Alterações"}
             </Button>
           </div>
         </form>
@@ -142,7 +142,7 @@ export function SettingsForm({ initialProfile, userEmail, userId }: SettingsForm
       {/* Security Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Seguran�a</CardTitle>
+          <CardTitle>Segurança</CardTitle>
           <CardDescription>
             Actualiza a tua palavra-passe de acesso.
           </CardDescription>
@@ -155,7 +155,7 @@ export function SettingsForm({ initialProfile, userEmail, userId }: SettingsForm
               id="new-password"
               type="password"
               minLength={6}
-              placeholder="M�nimo 6 caracteres"
+              placeholder="Mínimo 6 caracteres"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required

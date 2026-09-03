@@ -28,7 +28,9 @@ export function PayDebtModal({
   accounts,
 }: PayDebtModalProps) {
   const router = useRouter();
-  const [amount, setAmount] = useState(debt ? String(debt.remaining_amount) : "");
+  const [amount, setAmount] = useState(
+    debt ? String(debt.remaining_amount) : "",
+  );
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const [date, setDate] = useState(getTodayISODate());
   const [description, setDescription] = useState("");
@@ -38,7 +40,9 @@ export function PayDebtModal({
   if (!isOpen || !debt) return null;
 
   const isIOwe = debt.type === "I_OWE";
-  const title = isIOwe ? `Pagar a ${debt.person_name}` : `Receber de ${debt.person_name}`;
+  const title = isIOwe
+    ? `Pagar a ${debt.person_name}`
+    : `Receber de ${debt.person_name}`;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -46,7 +50,7 @@ export function PayDebtModal({
 
     const numAmount = parseFloat(amount.replace(/\s+/g, "").replace(",", "."));
     if (isNaN(numAmount) || numAmount <= 0) {
-      setError("Indica um valor v�lido maior que 0.");
+      setError("Indica um valor válido maior que 0.");
       return;
     }
 
@@ -70,7 +74,7 @@ export function PayDebtModal({
       router.refresh();
       onClose();
     } catch {
-      setError("N�o foi poss�vel registar o pagamento. Tenta novamente.");
+      setError("Não foi possível registar o pagamento. Tenta novamente.");
     } finally {
       setLoading(false);
     }
@@ -132,21 +136,28 @@ export function PayDebtModal({
           <Label htmlFor="pay-desc">Notas / Comprovativo (opcional)</Label>
           <Input
             id="pay-desc"
-            placeholder="Ex: Pagamento da 1� parcela"
+            placeholder="Ex: Pagamento da 1ª parcela"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
         </div>
 
         {error && (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700" role="alert">
+          <div
+            className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700"
+            role="alert"
+          >
             {error}
           </div>
         )}
 
         <div className="pt-2">
           <Button type="submit" fullWidth disabled={loading}>
-            {loading ? "A processar..." : isIOwe ? "Confirmar Pagamento" : "Confirmar Recebimento"}
+            {loading
+              ? "A processar..."
+              : isIOwe
+                ? "Confirmar Pagamento"
+                : "Confirmar Recebimento"}
           </Button>
         </div>
       </form>

@@ -30,7 +30,7 @@ export function formatRelativeDate(dateString: string | Date | null | undefined)
 
     if (diffDays === 0) return "Hoje";
     if (diffDays === 1) return "Ontem";
-    if (diffDays === -1) return "Amanh�";
+    if (diffDays === -1) return "Amanhã";
     
     return formatDate(date);
   } catch {

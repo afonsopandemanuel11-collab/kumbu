@@ -4,7 +4,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Icon } from "@/components/ui/icons";
 import { formatCurrency } from "@/lib/utils/currency";
+import { formatRelativeDate } from "@/lib/utils/date";
 import { useQuickAction } from "@/lib/context/quick-action-context";
 import type { FinancialDiaryEntry } from "@/lib/services/transactions";
 import type { Account } from "@/lib/services/accounts";
@@ -20,6 +22,16 @@ type DashboardViewProps = {
   recentDiary: FinancialDiaryEntry[];
 };
 
+const accountTypeIcon: Record<string, string> = {
+  BANK: "🏦",
+  CASH: "💵",
+  DIGITAL_WALLET: "📱",
+  CARD: "💳",
+  SAVINGS: "🏛️",
+  PROJECT: "🚀",
+  OTHER: "💰",
+};
+
 export function DashboardView({
   userName,
   currency,
@@ -31,13 +43,15 @@ export function DashboardView({
 }: DashboardViewProps) {
   const { openQuickRegister } = useQuickAction();
 
+  const firstName = userName.split(" ")[0];
+
   const todayIncome = todaySummary?.daily_income ?? 0;
   const todayExpense = todaySummary?.daily_expense ?? 0;
-  const todayNet = todaySummary?.daily_net ?? (todayIncome - todayExpense);
+  const todayNet = todaySummary?.daily_net ?? todayIncome - todayExpense;
 
   const monthIncome = monthSummary?.income ?? 0;
   const monthExpense = monthSummary?.expense ?? 0;
-  const monthNet = monthSummary?.net ?? (monthIncome - monthExpense);
+  const monthNet = monthSummary?.net ?? monthIncome - monthExpense;
 
   const isZeroState =
     totalBalance === 0 &&
@@ -46,254 +60,295 @@ export function DashboardView({
     todayIncome === 0 &&
     todayExpense === 0;
 
+  const activeAccounts = accounts.filter((a) => a.is_active && !a.archived_at);
+
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      {/* Greetings Header */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-6">
+      {/* Page greeting */}
+      <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-kumbu-900">
-            Ol�, {userName} ??
+            Olá, {firstName} 👋
           </h1>
           <p className="mt-0.5 text-sm text-kumbu-500">
-            Como est�o as tuas finan�as hoje?
+            Como estão as tuas finanças hoje?
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            onClick={() => openQuickRegister("EXPENSE")}
-            className="gap-1.5"
-          >
-            <span>+</span> Registar
-          </Button>
-        </div>
+        <Button
+          size="sm"
+          onClick={() => openQuickRegister("EXPENSE")}
+          className="shrink-0 hidden sm:flex gap-1.5"
+        >
+          <Icon name="plus" className="w-4 h-4" />
+          Registar
+        </Button>
       </div>
 
-      {/* Saldo Total Hero Card */}
-      <div className="rounded-3xl border border-kumbu-100 bg-white p-6 shadow-xs transition-all">
-        <p className="text-xs font-semibold uppercase tracking-wider text-kumbu-400">
-          Saldo total
-        </p>
-        <p className="mt-2 text-3xl font-extrabold tracking-tight text-kumbu-900 sm:text-4xl">
-          {formatCurrency(totalBalance, currency)}
-        </p>
+      {/* Hero balance card */}
+      <div className="relative overflow-hidden rounded-3xl bg-kumbu-800 p-6 text-white shadow-lg">
+        {/* Decorative blobs */}
+        <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-kumbu-700/50" />
+        <div className="pointer-events-none absolute -bottom-12 -left-6 h-36 w-36 rounded-full bg-kumbu-900/40" />
 
-        {/* Quick action buttons row */}
-        <div className="mt-6 flex flex-wrap gap-2 pt-4 border-t border-kumbu-50">
-          <button
-            type="button"
-            onClick={() => openQuickRegister("INCOME")}
-            className="flex items-center gap-1.5 rounded-xl bg-kumbu-50 px-3 py-2 text-xs font-semibold text-kumbu-800 hover:bg-kumbu-100 transition-colors"
-          >
-            <span>??</span> Ganhei
-          </button>
-          <button
-            type="button"
-            onClick={() => openQuickRegister("EXPENSE")}
-            className="flex items-center gap-1.5 rounded-xl bg-kumbu-50 px-3 py-2 text-xs font-semibold text-kumbu-800 hover:bg-kumbu-100 transition-colors"
-          >
-            <span>??</span> Gastei
-          </button>
-          <button
-            type="button"
-            onClick={() => openQuickRegister("TRANSFER")}
-            className="flex items-center gap-1.5 rounded-xl bg-kumbu-50 px-3 py-2 text-xs font-semibold text-kumbu-800 hover:bg-kumbu-100 transition-colors"
-          >
-            <span>?</span> Transferir
-          </button>
-          <button
-            type="button"
-            onClick={() => openQuickRegister("GOAL")}
-            className="flex items-center gap-1.5 rounded-xl bg-kumbu-50 px-3 py-2 text-xs font-semibold text-kumbu-800 hover:bg-kumbu-100 transition-colors"
-          >
-            <span>??</span> Poupar
-          </button>
-          <button
-            type="button"
-            onClick={() => openQuickRegister("NEW_DEBT")}
-            className="flex items-center gap-1.5 rounded-xl bg-kumbu-50 px-3 py-2 text-xs font-semibold text-kumbu-800 hover:bg-kumbu-100 transition-colors"
-          >
-            <span>??</span> D�vida
-          </button>
-          <button
-            type="button"
-            onClick={() => openQuickRegister("PROJECT")}
-            className="flex items-center gap-1.5 rounded-xl bg-kumbu-50 px-3 py-2 text-xs font-semibold text-kumbu-800 hover:bg-kumbu-100 transition-colors"
-          >
-            <span>??</span> Projecto
-          </button>
+        <div className="relative">
+          <p className="text-xs font-semibold uppercase tracking-widest text-kumbu-300">
+            Saldo total
+          </p>
+          <p className="mt-2 text-4xl font-extrabold tracking-tight sm:text-5xl">
+            {formatCurrency(totalBalance, currency)}
+          </p>
+          <p className="mt-1 text-xs text-kumbu-400">
+            {activeAccounts.length > 0
+              ? `Disponível em ${activeAccounts.length} carteira${activeAccounts.length !== 1 ? "s" : ""}`
+              : "Sem carteiras activas"}
+          </p>
+
+          {/* Quick actions row */}
+          <div className="mt-5 flex gap-2 overflow-x-auto scrollbar-none pb-0.5">
+            {[
+              { label: "Ganhei", action: "INCOME" as const, color: "bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200" },
+              { label: "Gastei", action: "EXPENSE" as const, color: "bg-rose-500/20 hover:bg-rose-500/30 text-rose-200" },
+              { label: "Transferir", action: "TRANSFER" as const, color: "bg-kumbu-600/40 hover:bg-kumbu-600/60 text-kumbu-200" },
+              { label: "Poupar", action: "GOAL" as const, color: "bg-amber-500/20 hover:bg-amber-500/30 text-amber-200" },
+              { label: "Dívida", action: "NEW_DEBT" as const, color: "bg-purple-500/20 hover:bg-purple-500/30 text-purple-200" },
+            ].map(({ label, action, color }) => (
+              <button
+                key={action}
+                type="button"
+                onClick={() => openQuickRegister(action)}
+                className={`shrink-0 rounded-xl px-3.5 py-2 text-xs font-semibold transition-colors ${color}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {isZeroState ? (
         <EmptyState
-          title="O teu Kumbu come�a aqui."
-          description="Ainda n�o tens movimentos financeiros. Come�a a acompanhar o teu dinheiro registando o primeiro movimento."
+          icon="💡"
+          title="O teu Kumbu começa aqui."
+          description="Ainda não tens movimentos financeiros. Começa a acompanhar o teu dinheiro registando o primeiro movimento."
           actionLabel="+ Registar primeiro movimento"
           onAction={() => openQuickRegister("INCOME")}
         />
       ) : (
         <>
-          {/* Summary Sections: Hoje & Este M�s */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {/* Hoje */}
-            <Card className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-kumbu-900">Hoje</h3>
-                <span className="text-xs text-kumbu-400">Resumo di�rio</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 pt-1">
-                <div className="rounded-xl bg-emerald-50/60 p-2.5">
-                  <p className="text-[11px] font-medium text-emerald-700">Ganhos</p>
-                  <p className="mt-1 text-sm font-bold text-emerald-800">
-                    +{formatCurrency(todayIncome, currency)}
-                  </p>
-                </div>
-                <div className="rounded-xl bg-rose-50/60 p-2.5">
-                  <p className="text-[11px] font-medium text-rose-700">Gastos</p>
-                  <p className="mt-1 text-sm font-bold text-rose-800">
-                    -{formatCurrency(todayExpense, currency)}
-                  </p>
-                </div>
-                <div className="rounded-xl bg-kumbu-50 p-2.5">
-                  <p className="text-[11px] font-medium text-kumbu-700">Resultado</p>
-                  <p className={`mt-1 text-sm font-bold ${todayNet >= 0 ? "text-kumbu-900" : "text-rose-700"}`}>
-                    {todayNet >= 0 ? "+" : ""}{formatCurrency(todayNet, currency)}
-                  </p>
-                </div>
-              </div>
-            </Card>
-
-            {/* Este M�s */}
-            <Card className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-kumbu-900">Este M�s</h3>
-                <span className="text-xs text-kumbu-400">Resumo mensal</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 pt-1">
-                <div className="rounded-xl bg-emerald-50/60 p-2.5">
-                  <p className="text-[11px] font-medium text-emerald-700">Ganhos</p>
-                  <p className="mt-1 text-sm font-bold text-emerald-800">
-                    +{formatCurrency(monthIncome, currency)}
-                  </p>
-                </div>
-                <div className="rounded-xl bg-rose-50/60 p-2.5">
-                  <p className="text-[11px] font-medium text-rose-700">Gastos</p>
-                  <p className="mt-1 text-sm font-bold text-rose-800">
-                    -{formatCurrency(monthExpense, currency)}
-                  </p>
-                </div>
-                <div className="rounded-xl bg-kumbu-50 p-2.5">
-                  <p className="text-[11px] font-medium text-kumbu-700">Resultado</p>
-                  <p className={`mt-1 text-sm font-bold ${monthNet >= 0 ? "text-kumbu-900" : "text-rose-700"}`}>
-                    {monthNet >= 0 ? "+" : ""}{formatCurrency(monthNet, currency)}
-                  </p>
-                </div>
-              </div>
-            </Card>
+          {/* Today + This Month */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <SummaryCard
+              title="Hoje"
+              subtitle="Resumo diário"
+              income={todayIncome}
+              expense={todayExpense}
+              net={todayNet}
+              currency={currency}
+            />
+            <SummaryCard
+              title="Este Mês"
+              subtitle="Resumo mensal"
+              income={monthIncome}
+              expense={monthExpense}
+              net={monthNet}
+              currency={currency}
+            />
           </div>
 
-          {/* Carteiras Summary Grid */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between px-1">
-              <h2 className="text-base font-bold text-kumbu-900">As tuas Carteiras</h2>
-              <Link
-                href="/carteiras"
-                className="text-xs font-semibold text-kumbu-600 hover:text-kumbu-800"
-              >
-                Ver todas ({accounts.length}) ?
-              </Link>
-            </div>
-
-            {accounts.length === 0 ? (
-              <Card className="py-4 text-center text-xs text-kumbu-500">
-                Ainda n�o tens carteiras criadas.{" "}
-                <Link href="/carteiras" className="font-semibold text-kumbu-700">
-                  Criar carteira
+          {/* Accounts */}
+          {activeAccounts.length > 0 && (
+            <section className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-kumbu-800">
+                  As tuas Carteiras
+                </h2>
+                <Link
+                  href="/carteiras"
+                  className="flex items-center gap-1 text-xs font-semibold text-kumbu-600 hover:text-kumbu-800 transition-colors"
+                >
+                  Ver todas ({activeAccounts.length})
+                  <Icon name="chevron-right" className="w-3.5 h-3.5" />
                 </Link>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                {accounts.slice(0, 4).map((acc) => (
-                  <Card key={acc.id} className="p-3.5 space-y-1">
-                    <p className="text-xs text-kumbu-500 truncate">{acc.name}</p>
-                    <p className="text-base font-bold text-kumbu-900">
-                      {formatCurrency(acc.current_balance, acc.currency)}
-                    </p>
-                  </Card>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {activeAccounts.slice(0, 4).map((acc) => (
+                  <div
+                    key={acc.id}
+                    className="rounded-2xl border border-kumbu-100 bg-white p-4 space-y-2 hover:border-kumbu-200 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-base" aria-hidden>
+                        {accountTypeIcon[acc.type] ?? "💰"}
+                      </span>
+                      <span className="text-[10px] font-medium text-kumbu-400 uppercase tracking-wide">
+                        {acc.type === "BANK"
+                          ? "Banco"
+                          : acc.type === "CASH"
+                          ? "Dinheiro"
+                          : acc.type === "DIGITAL_WALLET"
+                          ? "Digital"
+                          : acc.type === "CARD"
+                          ? "Cartão"
+                          : acc.type === "SAVINGS"
+                          ? "Poupança"
+                          : "Outro"}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-kumbu-500 truncate">
+                        {acc.name}
+                      </p>
+                      <p className="text-sm font-bold text-kumbu-900 tabular-nums">
+                        {formatCurrency(acc.current_balance, acc.currency)}
+                      </p>
+                    </div>
+                  </div>
                 ))}
               </div>
-            )}
-          </div>
+            </section>
+          )}
 
-          {/* Recent Financial Diary Activities */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between px-1">
-              <h2 className="text-base font-bold text-kumbu-900">Actividade Recente</h2>
-              <Link
-                href="/diario"
-                className="text-xs font-semibold text-kumbu-600 hover:text-kumbu-800"
-              >
-                Abrir Di�rio ?
-              </Link>
-            </div>
+          {/* Recent activity */}
+          {recentDiary.length > 0 && (
+            <section className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-kumbu-800">
+                  Actividade Recente
+                </h2>
+                <Link
+                  href="/diario"
+                  className="flex items-center gap-1 text-xs font-semibold text-kumbu-600 hover:text-kumbu-800 transition-colors"
+                >
+                  Ver diário
+                  <Icon name="chevron-right" className="w-3.5 h-3.5" />
+                </Link>
+              </div>
 
-            {recentDiary.length === 0 ? (
-              <Card className="py-6 text-center text-xs text-kumbu-500">
-                Sem registos recentes.
-              </Card>
-            ) : (
-              <div className="space-y-2">
-                {recentDiary.slice(0, 5).map((entry, index) => {
-                  const isPositive = entry.type === "INCOME" || entry.type === "PROJECT_INCOME";
+              <div className="rounded-2xl border border-kumbu-100 bg-white divide-y divide-kumbu-50 overflow-hidden">
+                {recentDiary.slice(0, 6).map((entry, index) => {
+                  const isIncome =
+                    entry.type === "INCOME" ||
+                    entry.type === "PROJECT_INCOME";
                   const isTransfer = entry.type === "TRANSFER";
                   const isGoal = entry.type === "SAVING";
-                  const isDebt = entry.type === "DEBT_PAYMENT";
 
-                  const icon = isPositive ? "??" : isTransfer ? "?" : isGoal ? "??" : isDebt ? "??" : "??";
-                  const sign = isPositive ? "+" : isTransfer ? "" : "-";
-                  const color = isPositive
-                    ? "text-emerald-700 font-semibold"
+                  const sign = isIncome ? "+" : isTransfer ? "" : "-";
+                  const amountColor = isIncome
+                    ? "text-emerald-700"
                     : isTransfer
-                    ? "text-kumbu-800 font-medium"
-                    : "text-rose-700 font-medium";
+                    ? "text-kumbu-700"
+                    : "text-rose-700";
+
+                  const dotColor = isIncome
+                    ? "bg-emerald-500"
+                    : isTransfer
+                    ? "bg-sky-500"
+                    : isGoal
+                    ? "bg-amber-500"
+                    : "bg-rose-500";
 
                   return (
-                    <Card
+                    <div
                       key={entry.id ?? `entry-${index}`}
-                      className="flex items-center justify-between p-3"
+                      className="flex items-center justify-between px-4 py-3"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-kumbu-50 text-base">
-                          {icon}
-                        </span>
-                        <div>
-                          <p className="text-xs font-semibold text-kumbu-900">
-                            {entry.category_name || (isTransfer ? "Transfer�ncia" : "Movimento")}
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span
+                          className={`h-2 w-2 shrink-0 rounded-full ${dotColor}`}
+                        />
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-kumbu-900 truncate">
+                            {entry.category_name ||
+                              (isTransfer ? "Transferência" : "Movimento")}
                           </p>
-                          <p className="text-[11px] text-kumbu-400">
+                          <p className="text-[11px] text-kumbu-400 truncate">
                             {isTransfer
-                              ? `${entry.account_name} ? ${entry.destination_account_name}`
+                              ? `${entry.account_name} → ${entry.destination_account_name}`
                               : entry.account_name}
-                            {entry.description ? ` � ${entry.description}` : ""}
+                            {entry.description
+                              ? ` · ${entry.description}`
+                              : ""}
                           </p>
                         </div>
                       </div>
 
-                      <div className="text-right">
-                        <p className={`text-xs ${color}`}>
+                      <div className="text-right shrink-0 ml-3">
+                        <p className={`text-xs font-semibold tabular-nums ${amountColor}`}>
                           {sign}
-                          {formatCurrency(entry.amount, entry.currency ?? "AOA")}
+                          {formatCurrency(
+                            entry.amount ?? 0,
+                            entry.currency ?? "AOA",
+                          )}
+                        </p>
+                        <p className="text-[10px] text-kumbu-400">
+                          {formatRelativeDate(entry.transaction_date)}
                         </p>
                       </div>
-                    </Card>
+                    </div>
                   );
                 })}
               </div>
-            )}
-          </div>
+            </section>
+          )}
         </>
       )}
     </div>
+  );
+}
+
+function SummaryCard({
+  title,
+  subtitle,
+  income,
+  expense,
+  net,
+  currency,
+}: {
+  title: string;
+  subtitle: string;
+  income: number;
+  expense: number;
+  net: number;
+  currency: string;
+}) {
+  return (
+    <Card className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-kumbu-900">{title}</p>
+        <p className="text-[11px] text-kumbu-400">{subtitle}</p>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <div className="rounded-xl bg-emerald-50 p-3">
+          <p className="text-[10px] font-medium text-emerald-700 uppercase tracking-wide">
+            Ganhos
+          </p>
+          <p className="mt-1.5 text-xs font-bold text-emerald-800 tabular-nums">
+            +{formatCurrency(income, currency)}
+          </p>
+        </div>
+        <div className="rounded-xl bg-rose-50 p-3">
+          <p className="text-[10px] font-medium text-rose-700 uppercase tracking-wide">
+            Gastos
+          </p>
+          <p className="mt-1.5 text-xs font-bold text-rose-800 tabular-nums">
+            -{formatCurrency(expense, currency)}
+          </p>
+        </div>
+        <div className="rounded-xl bg-kumbu-50 p-3">
+          <p className="text-[10px] font-medium text-kumbu-700 uppercase tracking-wide">
+            Resultado
+          </p>
+          <p
+            className={`mt-1.5 text-xs font-bold tabular-nums ${
+              net >= 0 ? "text-kumbu-900" : "text-rose-700"
+            }`}
+          >
+            {net >= 0 ? "+" : ""}
+            {formatCurrency(net, currency)}
+          </p>
+        </div>
+      </div>
+    </Card>
   );
 }

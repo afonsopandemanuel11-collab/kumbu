@@ -8,7 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
-import { createAccount, updateAccount, archiveAccount, type Account, type AccountType } from "@/lib/services/accounts";
+import {
+  createAccount,
+  updateAccount,
+  archiveAccount,
+  type Account,
+  type AccountType,
+} from "@/lib/services/accounts";
 
 type AccountModalProps = {
   isOpen: boolean;
@@ -18,11 +24,11 @@ type AccountModalProps = {
 };
 
 const accountTypes: { value: AccountType; label: string }[] = [
-  { value: "BANK", label: "Conta Banc�ria" },
-  { value: "CASH", label: "Dinheiro em M�o" },
+  { value: "BANK", label: "Conta Bancária" },
+  { value: "CASH", label: "Dinheiro em Mão" },
   { value: "DIGITAL_WALLET", label: "Carteira Digital" },
-  { value: "CARD", label: "Cart�o" },
-  { value: "SAVINGS", label: "Conta Poupan�a" },
+  { value: "CARD", label: "Cartão" },
+  { value: "SAVINGS", label: "Conta Poupança" },
   { value: "PROJECT", label: "Conta de Projecto" },
   { value: "OTHER", label: "Outro" },
 ];
@@ -39,8 +45,12 @@ function AccountFormInner({
   const router = useRouter();
   const [name, setName] = useState(accountToEdit?.name ?? "");
   const [type, setType] = useState<AccountType>(accountToEdit?.type ?? "BANK");
-  const [initialBalance, setInitialBalance] = useState(accountToEdit ? String(accountToEdit.initial_balance) : "0");
-  const [description, setDescription] = useState(accountToEdit?.description ?? "");
+  const [initialBalance, setInitialBalance] = useState(
+    accountToEdit ? String(accountToEdit.initial_balance) : "0",
+  );
+  const [description, setDescription] = useState(
+    accountToEdit?.description ?? "",
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,9 +63,11 @@ function AccountFormInner({
       return;
     }
 
-    const initBal = parseFloat(initialBalance.replace(/\s+/g, "").replace(",", "."));
+    const initBal = parseFloat(
+      initialBalance.replace(/\s+/g, "").replace(",", "."),
+    );
     if (isNaN(initBal)) {
-      setError("Saldo inicial inv�lido.");
+      setError("Saldo inicial inválido.");
       return;
     }
 
@@ -82,7 +94,7 @@ function AccountFormInner({
       router.refresh();
       onClose();
     } catch {
-      setError("N�o foi poss�vel guardar a carteira. Tenta novamente.");
+      setError("Não foi possível guardar a carteira. Tenta novamente.");
     } finally {
       setLoading(false);
     }
@@ -97,7 +109,7 @@ function AccountFormInner({
       router.refresh();
       onClose();
     } catch {
-      setError("N�o foi poss�vel arquivar a carteira.");
+      setError("Não foi possível arquivar a carteira.");
     } finally {
       setLoading(false);
     }
@@ -109,7 +121,7 @@ function AccountFormInner({
         <Label htmlFor="acc-name">Nome da Carteira</Label>
         <Input
           id="acc-name"
-          placeholder="Ex: Conta Familiar, Dinheiro em M�o"
+          placeholder="Ex: Conta Familiar, Dinheiro em Mão"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
@@ -147,7 +159,7 @@ function AccountFormInner({
       )}
 
       <div className="space-y-1.5">
-        <Label htmlFor="acc-desc">Descri��o (opcional)</Label>
+        <Label htmlFor="acc-desc">Descrição (opcional)</Label>
         <Input
           id="acc-desc"
           placeholder="Ex: Conta principal para despesas do dia-a-dia"
@@ -157,7 +169,10 @@ function AccountFormInner({
       </div>
 
       {error && (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700" role="alert">
+        <div
+          className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700"
+          role="alert"
+        >
           {error}
         </div>
       )}
@@ -174,7 +189,11 @@ function AccountFormInner({
           </Button>
         )}
         <Button type="submit" fullWidth disabled={loading}>
-          {loading ? "A guardar..." : accountToEdit ? "Guardar Altera��es" : "Criar Carteira"}
+          {loading
+            ? "A guardar..."
+            : accountToEdit
+              ? "Guardar Alterações"
+              : "Criar Carteira"}
         </Button>
       </div>
     </form>
@@ -196,7 +215,7 @@ export function AccountModal({
       title={accountToEdit ? "Editar Carteira" : "Criar Carteira"}
       description={
         accountToEdit
-          ? "Actualiza as informa��es da tua carteira."
+          ? "Actualiza as informações da tua carteira."
           : "Cria uma carteira para acompanhar os teus movimentos."
       }
     >

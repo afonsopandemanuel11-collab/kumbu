@@ -8,7 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
-import { createGoal, updateGoal, type Goal, type GoalPriority, type GoalStatus } from "@/lib/services/goals";
+import {
+  createGoal,
+  updateGoal,
+  type Goal,
+  type GoalPriority,
+  type GoalStatus,
+} from "@/lib/services/goals";
 import { sanitizeDate } from "@/lib/utils/date";
 import type { Account } from "@/lib/services/accounts";
 
@@ -22,7 +28,7 @@ type GoalModalProps = {
 
 const priorities: { value: GoalPriority; label: string }[] = [
   { value: "LOW", label: "Baixa" },
-  { value: "MEDIUM", label: "M�dia" },
+  { value: "MEDIUM", label: "Média" },
   { value: "HIGH", label: "Alta" },
 ];
 
@@ -46,12 +52,24 @@ function GoalFormInner({
 }) {
   const router = useRouter();
   const [name, setName] = useState(goalToEdit?.name ?? "");
-  const [targetAmount, setTargetAmount] = useState(goalToEdit ? String(goalToEdit.target_amount) : "");
-  const [accountId, setAccountId] = useState(goalToEdit?.account_id ?? (accounts[0]?.id ?? ""));
-  const [priority, setPriority] = useState<GoalPriority>(goalToEdit?.priority ?? "MEDIUM");
-  const [status, setStatus] = useState<GoalStatus>(goalToEdit?.status ?? "ACTIVE");
-  const [deadline, setDeadline] = useState(goalToEdit?.deadline ? goalToEdit.deadline.split("T")[0] : "");
-  const [description, setDescription] = useState(goalToEdit?.description ?? "");
+  const [targetAmount, setTargetAmount] = useState(
+    goalToEdit ? String(goalToEdit.target_amount) : "",
+  );
+  const [accountId, setAccountId] = useState(
+    goalToEdit?.account_id ?? (accounts[0]?.id ?? ""),
+  );
+  const [priority, setPriority] = useState<GoalPriority>(
+    goalToEdit?.priority ?? "MEDIUM",
+  );
+  const [status, setStatus] = useState<GoalStatus>(
+    goalToEdit?.status ?? "ACTIVE",
+  );
+  const [deadline, setDeadline] = useState(
+    goalToEdit?.deadline ? goalToEdit.deadline.split("T")[0] : "",
+  );
+  const [description, setDescription] = useState(
+    goalToEdit?.description ?? "",
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,9 +82,11 @@ function GoalFormInner({
       return;
     }
 
-    const numTarget = parseFloat(targetAmount.replace(/\s+/g, "").replace(",", "."));
+    const numTarget = parseFloat(
+      targetAmount.replace(/\s+/g, "").replace(",", "."),
+    );
     if (isNaN(numTarget) || numTarget <= 0) {
-      setError("Indica um valor objectivo v�lido maior que 0.");
+      setError("Indica um valor objectivo válido maior que 0.");
       return;
     }
 
@@ -100,7 +120,7 @@ function GoalFormInner({
       router.refresh();
       onClose();
     } catch {
-      setError("N�o foi poss�vel guardar a meta. Tenta novamente.");
+      setError("Não foi possível guardar a meta. Tenta novamente.");
     } finally {
       setLoading(false);
     }
@@ -112,7 +132,7 @@ function GoalFormInner({
         <Label htmlFor="goal-name">Nome da Meta</Label>
         <Input
           id="goal-name"
-          placeholder="Ex: Comprar computador, Fundo de Emerg�ncia"
+          placeholder="Ex: Comprar computador, Fundo de Emergência"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
@@ -159,7 +179,7 @@ function GoalFormInner({
             value={accountId}
             onChange={(e) => setAccountId(e.target.value)}
           >
-            <option value="">Nenhuma carteira espec�fica</option>
+            <option value="">Nenhuma carteira específica</option>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name} ({a.current_balance} Kz)
@@ -197,24 +217,31 @@ function GoalFormInner({
       )}
 
       <div className="space-y-1.5">
-        <Label htmlFor="goal-desc">Descri��o / Motiva��o (opcional)</Label>
+        <Label htmlFor="goal-desc">Descrição / Motivação (opcional)</Label>
         <Input
           id="goal-desc"
-          placeholder="Ex: Poupar 50.000 Kz por m�s"
+          placeholder="Ex: Poupar 50.000 Kz por mês"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
       </div>
 
       {error && (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700" role="alert">
+        <div
+          className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700"
+          role="alert"
+        >
           {error}
         </div>
       )}
 
       <div className="pt-2">
         <Button type="submit" fullWidth disabled={loading}>
-          {loading ? "A guardar..." : goalToEdit ? "Guardar Altera��es" : "Criar Meta"}
+          {loading
+            ? "A guardar..."
+            : goalToEdit
+              ? "Guardar Alterações"
+              : "Criar Meta"}
         </Button>
       </div>
     </form>
@@ -237,8 +264,8 @@ export function GoalModal({
       title={goalToEdit ? "Editar Meta" : "Criar Nova Meta"}
       description={
         goalToEdit
-          ? "Actualiza as informa��es da tua meta financeira."
-          : "Define um objectivo de poupan�a e acompanha o teu progresso."
+          ? "Actualiza as informações da tua meta financeira."
+          : "Define um objectivo de poupança e acompanha o teu progresso."
       }
     >
       <GoalFormInner

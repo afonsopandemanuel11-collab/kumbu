@@ -8,7 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
-import { createProject, updateProject, type Project, type ProjectStatus } from "@/lib/services/projects";
+import {
+  createProject,
+  updateProject,
+  type Project,
+  type ProjectStatus,
+} from "@/lib/services/projects";
 import { sanitizeDate } from "@/lib/utils/date";
 import type { Account } from "@/lib/services/accounts";
 
@@ -24,7 +29,7 @@ const projectStatuses: { value: ProjectStatus; label: string }[] = [
   { value: "PLANNED", label: "Planeado" },
   { value: "ACTIVE", label: "Activo" },
   { value: "PAUSED", label: "Pausado" },
-  { value: "COMPLETED", label: "Conclu�do" },
+  { value: "COMPLETED", label: "Concluído" },
   { value: "CANCELLED", label: "Cancelado" },
 ];
 
@@ -41,12 +46,24 @@ function ProjectFormInner({
 }) {
   const router = useRouter();
   const [name, setName] = useState(projectToEdit?.name ?? "");
-  const [budget, setBudget] = useState(projectToEdit?.budget ? String(projectToEdit.budget) : "");
-  const [accountId, setAccountId] = useState(projectToEdit?.account_id ?? (accounts[0]?.id ?? ""));
-  const [status, setStatus] = useState<ProjectStatus>(projectToEdit?.status ?? "ACTIVE");
-  const [startDate, setStartDate] = useState(projectToEdit?.start_date ? projectToEdit.start_date.split("T")[0] : "");
-  const [endDate, setEndDate] = useState(projectToEdit?.end_date ? projectToEdit.end_date.split("T")[0] : "");
-  const [description, setDescription] = useState(projectToEdit?.description ?? "");
+  const [budget, setBudget] = useState(
+    projectToEdit?.budget ? String(projectToEdit.budget) : "",
+  );
+  const [accountId, setAccountId] = useState(
+    projectToEdit?.account_id ?? (accounts[0]?.id ?? ""),
+  );
+  const [status, setStatus] = useState<ProjectStatus>(
+    projectToEdit?.status ?? "ACTIVE",
+  );
+  const [startDate, setStartDate] = useState(
+    projectToEdit?.start_date ? projectToEdit.start_date.split("T")[0] : "",
+  );
+  const [endDate, setEndDate] = useState(
+    projectToEdit?.end_date ? projectToEdit.end_date.split("T")[0] : "",
+  );
+  const [description, setDescription] = useState(
+    projectToEdit?.description ?? "",
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,7 +76,9 @@ function ProjectFormInner({
       return;
     }
 
-    const numBudget = budget ? parseFloat(budget.replace(/\s+/g, "").replace(",", ".")) : null;
+    const numBudget = budget
+      ? parseFloat(budget.replace(/\s+/g, "").replace(",", "."))
+      : null;
 
     setLoading(true);
     const supabase = createClient();
@@ -93,7 +112,7 @@ function ProjectFormInner({
       router.refresh();
       onClose();
     } catch {
-      setError("N�o foi poss�vel guardar o projecto. Tenta novamente.");
+      setError("Não foi possível guardar o projecto. Tenta novamente.");
     } finally {
       setLoading(false);
     }
@@ -115,7 +134,7 @@ function ProjectFormInner({
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="proj-budget">Or�amento Estimado (Kz)</Label>
+          <Label htmlFor="proj-budget">Orçamento Estimado (Kz)</Label>
           <Input
             id="proj-budget"
             type="number"
@@ -149,7 +168,7 @@ function ProjectFormInner({
           value={accountId}
           onChange={(e) => setAccountId(e.target.value)}
         >
-          <option value="">Nenhuma carteira espec�fica</option>
+          <option value="">Nenhuma carteira específica</option>
           {accounts.map((a) => (
             <option key={a.id} value={a.id}>
               {a.name} ({a.current_balance} Kz)
@@ -160,7 +179,7 @@ function ProjectFormInner({
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="proj-start">Data de In�cio</Label>
+          <Label htmlFor="proj-start">Data de Início</Label>
           <Input
             id="proj-start"
             type="date"
@@ -180,7 +199,7 @@ function ProjectFormInner({
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="proj-desc">Descri��o (opcional)</Label>
+        <Label htmlFor="proj-desc">Descrição (opcional)</Label>
         <Input
           id="proj-desc"
           placeholder="Objectivos ou notas do projecto"
@@ -190,14 +209,21 @@ function ProjectFormInner({
       </div>
 
       {error && (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700" role="alert">
+        <div
+          className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700"
+          role="alert"
+        >
           {error}
         </div>
       )}
 
       <div className="pt-2">
         <Button type="submit" fullWidth disabled={loading}>
-          {loading ? "A guardar..." : projectToEdit ? "Guardar Altera��es" : "Criar Projecto"}
+          {loading
+            ? "A guardar..."
+            : projectToEdit
+              ? "Guardar Alterações"
+              : "Criar Projecto"}
         </Button>
       </div>
     </form>
@@ -220,7 +246,7 @@ export function ProjectModal({
       title={projectToEdit ? "Editar Projecto" : "Criar Projecto"}
       description={
         projectToEdit
-          ? "Actualiza as informa��es do teu projecto."
+          ? "Actualiza as informações do teu projecto."
           : "Controla as receitas e gastos dedicados a uma iniciativa."
       }
     >

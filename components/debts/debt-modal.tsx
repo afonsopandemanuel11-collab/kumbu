@@ -8,7 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
-import { createDebt, updateDebt, type Debt, type DebtType, type DebtStatus } from "@/lib/services/debts";
+import {
+  createDebt,
+  updateDebt,
+  type Debt,
+  type DebtType,
+  type DebtStatus,
+} from "@/lib/services/debts";
 import { sanitizeDate } from "@/lib/utils/date";
 
 type DebtModalProps = {
@@ -40,11 +46,21 @@ function DebtFormInner({
 }) {
   const router = useRouter();
   const [personName, setPersonName] = useState(debtToEdit?.person_name ?? "");
-  const [type, setType] = useState<DebtType>(debtToEdit?.type ?? (defaultType ?? "I_OWE"));
-  const [amount, setAmount] = useState(debtToEdit ? String(debtToEdit.original_amount) : "");
-  const [dueDate, setDueDate] = useState(debtToEdit?.due_date ? debtToEdit.due_date.split("T")[0] : "");
-  const [status, setStatus] = useState<DebtStatus>(debtToEdit?.status ?? "OPEN");
-  const [description, setDescription] = useState(debtToEdit?.description ?? "");
+  const [type, setType] = useState<DebtType>(
+    debtToEdit?.type ?? (defaultType ?? "I_OWE"),
+  );
+  const [amount, setAmount] = useState(
+    debtToEdit ? String(debtToEdit.original_amount) : "",
+  );
+  const [dueDate, setDueDate] = useState(
+    debtToEdit?.due_date ? debtToEdit.due_date.split("T")[0] : "",
+  );
+  const [status, setStatus] = useState<DebtStatus>(
+    debtToEdit?.status ?? "OPEN",
+  );
+  const [description, setDescription] = useState(
+    debtToEdit?.description ?? "",
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,7 +75,7 @@ function DebtFormInner({
 
     const numAmount = parseFloat(amount.replace(/\s+/g, "").replace(",", "."));
     if (isNaN(numAmount) || numAmount <= 0) {
-      setError("Indica um valor v�lido maior que 0.");
+      setError("Indica um valor válido maior que 0.");
       return;
     }
 
@@ -91,7 +107,7 @@ function DebtFormInner({
       router.refresh();
       onClose();
     } catch {
-      setError("N�o foi poss�vel guardar a d�vida. Tenta novamente.");
+      setError("Não foi possível guardar a dívida. Tenta novamente.");
     } finally {
       setLoading(false);
     }
@@ -169,24 +185,31 @@ function DebtFormInner({
       )}
 
       <div className="space-y-1.5">
-        <Label htmlFor="debt-desc">Descri��o / Motivo (opcional)</Label>
+        <Label htmlFor="debt-desc">Descrição / Motivo (opcional)</Label>
         <Input
           id="debt-desc"
-          placeholder="Ex: Empr�stimo de emerg�ncia, Compra de material"
+          placeholder="Ex: Empréstimo de emergência, Compra de material"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
       </div>
 
       {error && (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700" role="alert">
+        <div
+          className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700"
+          role="alert"
+        >
           {error}
         </div>
       )}
 
       <div className="pt-2">
         <Button type="submit" fullWidth disabled={loading}>
-          {loading ? "A guardar..." : debtToEdit ? "Guardar Altera��es" : "Criar D�vida"}
+          {loading
+            ? "A guardar..."
+            : debtToEdit
+              ? "Guardar Alterações"
+              : "Criar Dívida"}
         </Button>
       </div>
     </form>
@@ -206,10 +229,10 @@ export function DebtModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={debtToEdit ? "Editar D�vida" : "Registar D�vida"}
+      title={debtToEdit ? "Editar Dívida" : "Registar Dívida"}
       description={
         debtToEdit
-          ? "Actualiza as informa��es da d�vida."
+          ? "Actualiza as informações da dívida."
           : "Regista valores que deves ou que outras pessoas te devem."
       }
     >

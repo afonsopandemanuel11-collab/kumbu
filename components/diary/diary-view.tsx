@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Icon } from "@/components/ui/icons";
+import { cn } from "@/lib/utils/cn";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatRelativeDate } from "@/lib/utils/date";
 import { useQuickAction } from "@/lib/context/quick-action-context";
@@ -17,13 +18,53 @@ type DiaryViewProps = {
 
 type FilterType = "ALL" | "INCOME" | "EXPENSE" | "TRANSFER" | "OTHER";
 
+function getEntryDetails(entry: FinancialDiaryEntry) {
+  const isIncome = entry.type === "INCOME" || entry.type === "PROJECT_INCOME";
+  const isTransfer = entry.type === "TRANSFER";
+  const isGoal = entry.type === "SAVING";
+  const isDebt = entry.type === "DEBT_PAYMENT";
+
+  const dotColor = isIncome
+    ? "bg-emerald-500"
+    : isTransfer
+      ? "bg-sky-500"
+      : isGoal
+        ? "bg-amber-500"
+        : isDebt
+          ? "bg-purple-500"
+          : "bg-rose-500";
+
+  const amountColor = isIncome
+    ? "text-emerald-700"
+    : isTransfer
+      ? "text-sky-700"
+      : "text-rose-700";
+
+  const sign = isIncome ? "+" : isTransfer || isGoal ? "" : "-";
+
+  const title =
+    entry.category_name ||
+    (isTransfer
+      ? "Transferência"
+      : isGoal
+        ? "Poupança"
+        : isDebt
+          ? "Pagamento de Dívida"
+          : "Movimento");
+
+  const subtitle = isTransfer
+    ? `${entry.account_name ?? "Conta"} → ${entry.destination_account_name ?? "Conta"}`
+    : entry.account_name ?? "";
+
+  return { dotColor, amountColor, sign, title, subtitle };
+}
+
 export function DiaryView({ initialEntries }: DiaryViewProps) {
   const { openQuickRegister } = useQuickAction();
   const [filter, setFilter] = useState<FilterType>("ALL");
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredEntries = initialEntries.filter((entry) => {
-    // Filter by type
     if (filter === "INCOME") {
       if (entry.type !== "INCOME" && entry.type !== "PROJECT_INCOME") return false;
     } else if (filter === "EXPENSE") {
@@ -31,20 +72,23 @@ export function DiaryView({ initialEntries }: DiaryViewProps) {
     } else if (filter === "TRANSFER") {
       if (entry.type !== "TRANSFER") return false;
     } else if (filter === "OTHER") {
-      if (entry.type === "INCOME" || entry.type === "EXPENSE" || entry.type === "TRANSFER") return false;
+      if (
+        entry.type === "INCOME" ||
+        entry.type === "EXPENSE" ||
+        entry.type === "TRANSFER"
+      )
+        return false;
     }
 
-    // Search term
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
-      const matchDesc = entry.description?.toLowerCase().includes(term);
-      const matchCat = entry.category_name?.toLowerCase().includes(term);
-      const matchAcc = entry.account_name?.toLowerCase().includes(term);
-      const matchDest = entry.destination_account_name?.toLowerCase().includes(term);
-      const matchProj = entry.project_name?.toLowerCase().includes(term);
-      if (!matchDesc && !matchCat && !matchAcc && !matchDest && !matchProj) {
-        return false;
-      }
+      return [
+        entry.description,
+        entry.category_name,
+        entry.account_name,
+        entry.destination_account_name,
+        entry.project_name,
+      ].some((s) => s?.toLowerCase().includes(term));
     }
 
     return true;
@@ -53,100 +97,70 @@ export function DiaryView({ initialEntries }: DiaryViewProps) {
   // Group by date
   const groupedByDate: Record<string, FinancialDiaryEntry[]> = {};
   filteredEntries.forEach((entry) => {
-    const rawDate = entry.transaction_date ? entry.transaction_date.split("T")[0] : "Outras Datas";
-    if (!groupedByDate[rawDate]) {
-      groupedByDate[rawDate] = [];
-    }
+    const rawDate = entry.transaction_date
+      ? entry.transaction_date.split("T")[0]
+      : "Outras Datas";
+    if (!groupedByDate[rawDate]) groupedByDate[rawDate] = [];
     groupedByDate[rawDate].push(entry);
   });
 
-  const sortedDates = Object.keys(groupedByDate).sort((a, b) => b.localeCompare(a));
+  const sortedDates = Object.keys(groupedByDate).sort((a, b) =>
+    b.localeCompare(a),
+  );
 
-  function getEntryDetails(entry: FinancialDiaryEntry) {
-    const isPositive = entry.type === "INCOME" || entry.type === "PROJECT_INCOME";
-    const isTransfer = entry.type === "TRANSFER";
-    const isGoal = entry.type === "SAVING";
-    const isDebt = entry.type === "DEBT_PAYMENT";
-
-    let icon = "??";
-    let sign = "-";
-    let colorClass = "text-rose-600";
-
-    if (isPositive) {
-      icon = "??";
-      sign = "+";
-      colorClass = "text-emerald-600 font-semibold";
-    } else if (isTransfer) {
-      icon = "?";
-      sign = "";
-      colorClass = "text-kumbu-800 font-medium";
-    } else if (isGoal) {
-      icon = "??";
-      sign = "";
-      colorClass = "text-sky-700 font-medium";
-    } else if (isDebt) {
-      icon = "??";
-      sign = "-";
-      colorClass = "text-amber-700 font-medium";
-    }
-
-    const title = entry.category_name || (isTransfer ? "Transfer�ncia" : isGoal ? "Poupan�a" : isDebt ? "Pagamento de D�vida" : "Movimento");
-    const accountInfo = isTransfer
-      ? `${entry.account_name ?? "Conta"} ? ${entry.destination_account_name ?? "Conta"}`
-      : isPositive
-      ? `? ${entry.account_name ?? "Conta"}`
-      : `? ${entry.account_name ?? "Conta"}`;
-
-    return { icon, sign, colorClass, title, accountInfo };
-  }
+  const filters: { id: FilterType; label: string }[] = [
+    { id: "ALL", label: "Todos" },
+    { id: "INCOME", label: "Ganhos" },
+    { id: "EXPENSE", label: "Gastos" },
+    { id: "TRANSFER", label: "Transferências" },
+    { id: "OTHER", label: "Outros" },
+  ];
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-kumbu-900">
-            Di�rio Financeiro
+            Diário Financeiro
           </h1>
           <p className="mt-0.5 text-sm text-kumbu-500">
-            Hist�rico completo de todos os teus movimentos agrupados por dia.
+            Histórico completo de todos os teus movimentos financeiros.
           </p>
         </div>
-        <Button onClick={() => openQuickRegister("EXPENSE")} className="gap-1.5 self-start sm:self-auto">
-          <span>+</span> Registar Movimento
+        <Button
+          onClick={() => openQuickRegister("EXPENSE")}
+          size="sm"
+          className="gap-1.5 self-start"
+        >
+          <Icon name="plus" className="w-4 h-4" />
+          Registar Movimento
         </Button>
       </div>
 
-      {/* Filters & Search */}
+      {/* Filters + Search */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-          {(
-            [
-              { id: "ALL", label: "Todos" },
-              { id: "INCOME", label: "Ganhos" },
-              { id: "EXPENSE", label: "Gastos" },
-              { id: "TRANSFER", label: "Transfer�ncias" },
-              { id: "OTHER", label: "Outros" },
-            ] as const
-          ).map((t) => (
+        <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
+          {filters.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => setFilter(t.id)}
-              className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
+              className={cn(
+                "shrink-0 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all",
                 filter === t.id
-                  ? "bg-kumbu-900 text-white shadow-xs"
-                  : "bg-white border border-kumbu-100 text-kumbu-700 hover:bg-kumbu-50"
-              }`}
+                  ? "bg-kumbu-900 text-white shadow-sm"
+                  : "bg-white border border-kumbu-100 text-kumbu-600 hover:border-kumbu-200 hover:text-kumbu-900",
+              )}
             >
               {t.label}
             </button>
           ))}
         </div>
 
-        <div className="w-full sm:w-64">
+        <div className="w-full sm:w-56">
           <Input
-            placeholder="Pesquisar no di�rio..."
+            placeholder="Pesquisar..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="h-9 text-xs"
@@ -154,49 +168,80 @@ export function DiaryView({ initialEntries }: DiaryViewProps) {
         </div>
       </div>
 
-      {/* Entries List or Empty State */}
+      {/* Content */}
       {initialEntries.length === 0 ? (
         <EmptyState
-          title="Ainda n�o tens movimentos registados."
-          description="Todos os teus ganhos, gastos e transfer�ncias aparecer�o aqui organizados cronologicamente."
+          icon="📖"
+          title="Ainda não tens movimentos registados."
+          description="Todos os teus ganhos, gastos e transferências aparecerão aqui organizados cronologicamente."
           actionLabel="+ Registar primeiro movimento"
           onAction={() => openQuickRegister("EXPENSE")}
         />
       ) : sortedDates.length === 0 ? (
-        <div className="rounded-2xl border border-kumbu-100 bg-white p-8 text-center text-sm text-kumbu-500">
-          Nenhum movimento encontrado para os filtros seleccionados.
+        <div className="rounded-2xl border border-dashed border-kumbu-200 p-10 text-center">
+          <p className="text-sm text-kumbu-400">
+            Nenhum resultado para os filtros seleccionados.
+          </p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-8">
           {sortedDates.map((dateKey) => {
             const dayEntries = groupedByDate[dateKey];
             const displayDate = formatRelativeDate(dateKey);
 
+            // Compute daily totals
+            const dayIncome = dayEntries
+              .filter((e) => e.type === "INCOME" || e.type === "PROJECT_INCOME")
+              .reduce((s, e) => s + (e.amount ?? 0), 0);
+            const dayExpense = dayEntries
+              .filter((e) => e.type === "EXPENSE" || e.type === "PROJECT_EXPENSE")
+              .reduce((s, e) => s + (e.amount ?? 0), 0);
+
             return (
-              <div key={dateKey} className="space-y-2">
-                <div className="flex items-center gap-2 px-1">
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-kumbu-400">
-                    {displayDate}
-                  </h2>
-                  <div className="h-px flex-1 bg-kumbu-100" />
+              <div key={dateKey}>
+                {/* Date header */}
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-kumbu-400" />
+                    <h2 className="text-xs font-semibold uppercase tracking-widest text-kumbu-500">
+                      {displayDate}
+                    </h2>
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px]">
+                    {dayIncome > 0 && (
+                      <span className="font-semibold text-emerald-600">
+                        +{formatCurrency(dayIncome)}
+                      </span>
+                    )}
+                    {dayExpense > 0 && (
+                      <span className="font-semibold text-rose-600">
+                        -{formatCurrency(dayExpense)}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                <div className="space-y-1.5">
+                {/* Entries */}
+                <div className="overflow-hidden rounded-2xl border border-kumbu-100 bg-white divide-y divide-kumbu-50">
                   {dayEntries.map((entry, index) => {
-                    const { icon, sign, colorClass, title, accountInfo } = getEntryDetails(entry);
+                    const { dotColor, amountColor, sign, title, subtitle } =
+                      getEntryDetails(entry);
 
                     return (
-                      <Card
-                        key={entry.id ?? `diary-entry-${dateKey}-${index}`}
-                        className="flex items-center justify-between p-3.5 transition-colors hover:border-kumbu-200"
+                      <div
+                        key={entry.id ?? `diary-${dateKey}-${index}`}
+                        className="flex items-center justify-between gap-3 px-4 py-3.5 hover:bg-kumbu-50/50 transition-colors"
                       >
-                        <div className="flex items-center gap-3">
-                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kumbu-50 text-lg">
-                            {icon}
-                          </span>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-semibold text-kumbu-900">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span
+                            className={cn(
+                              "h-2 w-2 shrink-0 rounded-full",
+                              dotColor,
+                            )}
+                          />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-sm font-semibold text-kumbu-900 truncate">
                                 {title}
                               </p>
                               {entry.project_name && (
@@ -205,20 +250,25 @@ export function DiaryView({ initialEntries }: DiaryViewProps) {
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-xs text-kumbu-500">
-                              {accountInfo}
-                              {entry.description ? ` � ${entry.description}` : ""}
+                            <p className="text-[11px] text-kumbu-400 truncate">
+                              {subtitle}
+                              {entry.description ? ` · ${entry.description}` : ""}
                             </p>
                           </div>
                         </div>
 
-                        <div className="text-right">
-                          <p className={`text-sm ${colorClass}`}>
+                        <div className="text-right shrink-0">
+                          <p
+                            className={cn(
+                              "text-sm font-semibold tabular-nums",
+                              amountColor,
+                            )}
+                          >
                             {sign}
-                            {formatCurrency(entry.amount, entry.currency ?? "AOA")}
+                            {formatCurrency(entry.amount ?? 0, entry.currency ?? "AOA")}
                           </p>
                         </div>
-                      </Card>
+                      </div>
                     );
                   })}
                 </div>

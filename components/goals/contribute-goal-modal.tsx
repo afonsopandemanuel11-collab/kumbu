@@ -45,12 +45,12 @@ export function ContributeGoalModal({
 
     const numAmount = parseFloat(amount.replace(/\s+/g, "").replace(",", "."));
     if (isNaN(numAmount) || numAmount <= 0) {
-      setError("Indica um valor v�lido maior que 0.");
+      setError("Indica um valor válido maior que 0.");
       return;
     }
 
     if (!accountId) {
-      setError("Selecciona a carteira de onde sair� o valor.");
+      setError("Selecciona a carteira de onde sairá o valor.");
       return;
     }
 
@@ -70,7 +70,7 @@ export function ContributeGoalModal({
       router.refresh();
       onClose();
     } catch {
-      setError("N�o foi poss�vel registar a poupan�a. Tenta novamente.");
+      setError("Não foi possível registar a poupança. Tenta novamente.");
     } finally {
       setLoading(false);
     }
@@ -127,24 +127,29 @@ export function ContributeGoalModal({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="contribute-desc">Descri��o / Coment�rio (opcional)</Label>
+          <Label htmlFor="contribute-desc">
+            Descrição / Comentário (opcional)
+          </Label>
           <Input
             id="contribute-desc"
-            placeholder="Ex: Poupan�a do sal�rio deste m�s"
+            placeholder="Ex: Poupança do salário deste mês"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
         </div>
 
         {error && (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700" role="alert">
+          <div
+            className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700"
+            role="alert"
+          >
             {error}
           </div>
         )}
 
         <div className="pt-2">
           <Button type="submit" fullWidth disabled={loading}>
-            {loading ? "A guardar..." : "Confirmar Poupan�a"}
+            {loading ? "A guardar..." : "Confirmar Poupança"}
           </Button>
         </div>
       </form>

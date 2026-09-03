@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 
 import { Sidebar } from "@/components/layout/sidebar";
 import { BottomNav } from "@/components/layout/bottom-nav";
-import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/client";
 import { QuickActionProvider, useQuickAction } from "@/lib/context/quick-action-context";
 
@@ -17,6 +17,8 @@ function AppShellInner({ children, userName }: AppShellProps) {
   const router = useRouter();
   const { openQuickRegister } = useQuickAction();
 
+  const firstName = userName?.split(" ")[0] ?? "Utilizador";
+
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -25,38 +27,57 @@ function AppShellInner({ children, userName }: AppShellProps) {
   }
 
   return (
-    <div className="flex min-h-screen bg-kumbu-50">
+    <div className="flex min-h-screen bg-[#f5f7f6]">
       <Sidebar />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-kumbu-100 bg-white/95 px-4 py-3 backdrop-blur lg:px-8">
-          <div className="lg:hidden">
-            <p className="text-lg font-bold text-kumbu-900">KUMBU</p>
-            <p className="text-xs text-kumbu-500">Gest�o Financeira Pessoal</p>
+        {/* Header */}
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-kumbu-100 bg-white/95 px-4 backdrop-blur-sm lg:px-6">
+          {/* Mobile: logo */}
+          <div className="flex items-center gap-2 lg:hidden">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-kumbu-600 text-white text-xs font-bold">
+              K
+            </span>
+            <span className="text-base font-bold text-kumbu-900">KUMBU</span>
           </div>
 
-          <div className="hidden lg:block">
-            <p className="text-sm font-medium text-kumbu-700">
-              Ol�{userName ? `, ${userName}` : ""} ??
+          {/* Desktop: greeting */}
+          <div className="hidden lg:flex items-center gap-2">
+            <p className="text-sm text-kumbu-600">
+              Olá,{" "}
+              <span className="font-semibold text-kumbu-900">{firstName}</span>{" "}
+              👋
             </p>
           </div>
 
+          {/* Actions */}
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="secondary"
-              className="hidden sm:inline-flex gap-1.5"
+            <button
+              type="button"
               onClick={() => openQuickRegister("EXPENSE")}
+              className="hidden sm:flex items-center gap-1.5 rounded-xl bg-kumbu-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-kumbu-700 active:scale-[0.98] transition-all"
             >
-              <span className="font-bold">+</span> Registar
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              Sair
-            </Button>
+              <Icon name="plus" className="w-4 h-4" />
+              Registar
+            </button>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              aria-label="Sair"
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-kumbu-500 hover:bg-kumbu-50 hover:text-kumbu-800 transition-colors"
+            >
+              <Icon name="logout" className="w-4 h-4" />
+            </button>
           </div>
         </header>
 
-        <main className="flex-1 px-4 py-6 pb-28 lg:px-8 lg:pb-8">{children}</main>
+        {/* Main content */}
+        <main className="flex-1 px-4 py-5 pb-28 lg:px-6 lg:pb-8 lg:py-6">
+          <div className="mx-auto max-w-5xl animate-fade-in">
+            {children}
+          </div>
+        </main>
       </div>
 
       <BottomNav />

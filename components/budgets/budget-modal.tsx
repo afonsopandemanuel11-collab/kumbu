@@ -8,7 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
-import { createBudget, updateBudget, type Budget, type BudgetPeriodType } from "@/lib/services/budgets";
+import {
+  createBudget,
+  updateBudget,
+  type Budget,
+  type BudgetPeriodType,
+} from "@/lib/services/budgets";
 import { sanitizeDate } from "@/lib/utils/date";
 import type { Category } from "@/lib/services/categories";
 import type { Account } from "@/lib/services/accounts";
@@ -42,18 +47,30 @@ function BudgetFormInner({
   onClose: () => void;
 }) {
   const router = useRouter();
-  const [amount, setAmount] = useState(budgetToEdit ? String(budgetToEdit.amount) : "");
-  const [categoryId, setCategoryId] = useState(budgetToEdit?.category_id ?? (categories[0]?.id ?? ""));
+  const [amount, setAmount] = useState(
+    budgetToEdit ? String(budgetToEdit.amount) : "",
+  );
+  const [categoryId, setCategoryId] = useState(
+    budgetToEdit?.category_id ?? (categories[0]?.id ?? ""),
+  );
   const [accountId, setAccountId] = useState(budgetToEdit?.account_id ?? "");
-  const [periodType, setPeriodType] = useState<BudgetPeriodType>(budgetToEdit?.period_type ?? "MONTHLY");
-  
+  const [periodType, setPeriodType] = useState<BudgetPeriodType>(
+    budgetToEdit?.period_type ?? "MONTHLY",
+  );
+
   const now = new Date();
   const defaultStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
   const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   const defaultEnd = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, "0")}-${String(nextMonth.getDate()).padStart(2, "0")}`;
 
-  const [startDate, setStartDate] = useState(budgetToEdit?.start_date ? budgetToEdit.start_date.split("T")[0] : defaultStart);
-  const [endDate, setEndDate] = useState(budgetToEdit?.end_date ? budgetToEdit.end_date.split("T")[0] : defaultEnd);
+  const [startDate, setStartDate] = useState(
+    budgetToEdit?.start_date
+      ? budgetToEdit.start_date.split("T")[0]
+      : defaultStart,
+  );
+  const [endDate, setEndDate] = useState(
+    budgetToEdit?.end_date ? budgetToEdit.end_date.split("T")[0] : defaultEnd,
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,7 +80,7 @@ function BudgetFormInner({
 
     const numAmount = parseFloat(amount.replace(/\s+/g, "").replace(",", "."));
     if (isNaN(numAmount) || numAmount <= 0) {
-      setError("Indica um valor limite de or�amento v�lido.");
+      setError("Indica um valor limite de orçamento válido.");
       return;
     }
 
@@ -71,7 +88,7 @@ function BudgetFormInner({
     const safeEnd = sanitizeDate(endDate);
 
     if (!safeStart || !safeEnd) {
-      setError("Indica as datas de in�cio e fim do per�odo.");
+      setError("Indica as datas de início e fim do período.");
       return;
     }
 
@@ -103,7 +120,7 @@ function BudgetFormInner({
       router.refresh();
       onClose();
     } catch {
-      setError("N�o foi poss�vel guardar o or�amento. Tenta novamente.");
+      setError("Não foi possível guardar o orçamento. Tenta novamente.");
     } finally {
       setLoading(false);
     }
@@ -139,14 +156,15 @@ function BudgetFormInner({
             <option value="">Todas as categorias</option>
             {expenseCategories.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.icon ? `${c.icon} ` : ""}{c.name}
+                {c.icon ? `${c.icon} ` : ""}
+                {c.name}
               </option>
             ))}
           </Select>
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="budget-period">Tipo de Per�odo</Label>
+          <Label htmlFor="budget-period">Tipo de Período</Label>
           <Select
             id="budget-period"
             value={periodType}
@@ -162,7 +180,7 @@ function BudgetFormInner({
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="budget-acc">Carteira Espec�fica (opcional)</Label>
+        <Label htmlFor="budget-acc">Carteira Específica (opcional)</Label>
         <Select
           id="budget-acc"
           value={accountId}
@@ -179,7 +197,7 @@ function BudgetFormInner({
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="budget-start">Data In�cio</Label>
+          <Label htmlFor="budget-start">Data Início</Label>
           <Input
             id="budget-start"
             type="date"
@@ -201,14 +219,21 @@ function BudgetFormInner({
       </div>
 
       {error && (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700" role="alert">
+        <div
+          className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700"
+          role="alert"
+        >
           {error}
         </div>
       )}
 
       <div className="pt-2">
         <Button type="submit" fullWidth disabled={loading}>
-          {loading ? "A guardar..." : budgetToEdit ? "Guardar Altera��es" : "Definir Or�amento"}
+          {loading
+            ? "A guardar..."
+            : budgetToEdit
+              ? "Guardar Alterações"
+              : "Definir Orçamento"}
         </Button>
       </div>
     </form>
@@ -229,11 +254,11 @@ export function BudgetModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={budgetToEdit ? "Editar Or�amento" : "Definir Novo Or�amento"}
+      title={budgetToEdit ? "Editar Orçamento" : "Definir Novo Orçamento"}
       description={
         budgetToEdit
-          ? "Actualiza os limites do teu or�amento."
-          : "Controla os teus limites de despesa por categoria ou per�odo."
+          ? "Actualiza os limites do teu orçamento."
+          : "Controla os teus limites de despesa por categoria ou período."
       }
     >
       <BudgetFormInner

@@ -9,7 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
 import { getTodayISODate, sanitizeDate } from "@/lib/utils/date";
-import { createIncome, createExpense, createTransfer, payDebt, contributeToGoal, createProjectTransaction } from "@/lib/services/transactions";
+import {
+  createIncome,
+  createExpense,
+  createTransfer,
+  payDebt,
+  contributeToGoal,
+  createProjectTransaction,
+} from "@/lib/services/transactions";
 import { createDebt } from "@/lib/services/debts";
 import type { Account } from "@/lib/services/accounts";
 import type { Category } from "@/lib/services/categories";
@@ -17,7 +24,14 @@ import type { Goal } from "@/lib/services/goals";
 import type { Debt } from "@/lib/services/debts";
 import type { Project } from "@/lib/services/projects";
 
-type ActionType = "INCOME" | "EXPENSE" | "TRANSFER" | "GOAL" | "NEW_DEBT" | "PAY_DEBT" | "PROJECT";
+type ActionType =
+  | "INCOME"
+  | "EXPENSE"
+  | "TRANSFER"
+  | "GOAL"
+  | "NEW_DEBT"
+  | "PAY_DEBT"
+  | "PROJECT";
 
 type QuickRegisterModalProps = {
   isOpen: boolean;
@@ -27,13 +41,13 @@ type QuickRegisterModalProps = {
 };
 
 const actionTabs: { id: ActionType; label: string; icon: string }[] = [
-  { id: "EXPENSE", label: "Gastei", icon: "??" },
-  { id: "INCOME", label: "Ganhei", icon: "??" },
-  { id: "TRANSFER", label: "Transferi", icon: "?" },
-  { id: "GOAL", label: "Poupei", icon: "??" },
-  { id: "NEW_DEBT", label: "D�vida", icon: "??" },
-  { id: "PAY_DEBT", label: "Paguei D�vida", icon: "??" },
-  { id: "PROJECT", label: "Projecto", icon: "??" },
+  { id: "EXPENSE", label: "Gastei", icon: "💸" },
+  { id: "INCOME", label: "Ganhei", icon: "💰" },
+  { id: "TRANSFER", label: "Transferi", icon: "🔄" },
+  { id: "GOAL", label: "Poupei", icon: "🎯" },
+  { id: "NEW_DEBT", label: "Dívida", icon: "🤝" },
+  { id: "PAY_DEBT", label: "Paguei Dívida", icon: "💳" },
+  { id: "PROJECT", label: "Projecto", icon: "🚀" },
 ];
 
 function QuickRegisterFormInner({
@@ -63,12 +77,15 @@ function QuickRegisterFormInner({
   // Form Fields
   const [amount, setAmount] = useState<string>("");
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
-  const [selectedDestinationAccountId, setSelectedDestinationAccountId] = useState<string>("");
+  const [selectedDestinationAccountId, setSelectedDestinationAccountId] =
+    useState<string>("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
   const [selectedGoalId, setSelectedGoalId] = useState<string>("");
   const [selectedDebtId, setSelectedDebtId] = useState<string>("");
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
-  const [projectTxType, setProjectTxType] = useState<"PROJECT_EXPENSE" | "PROJECT_INCOME">("PROJECT_EXPENSE");
+  const [projectTxType, setProjectTxType] = useState<
+    "PROJECT_EXPENSE" | "PROJECT_INCOME"
+  >("PROJECT_EXPENSE");
   const [debtType, setDebtType] = useState<"I_OWE" | "OWED_TO_ME">("I_OWE");
   const [personName, setPersonName] = useState<string>("");
   const [date, setDate] = useState<string>(getTodayISODate());
@@ -78,16 +95,39 @@ function QuickRegisterFormInner({
     async function loadData() {
       try {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (!user) return;
         setUserId(user.id);
 
         const [accRes, catRes, goalRes, debtRes, projRes] = await Promise.all([
-          supabase.from("accounts").select("*").eq("is_active", true).is("archived_at", null).order("name"),
-          supabase.from("categories").select("*").eq("is_active", true).order("name"),
-          supabase.from("goals").select("*").eq("status", "ACTIVE").order("name"),
-          supabase.from("debts").select("*").in("status", ["OPEN", "PARTIALLY_PAID"]).order("person_name"),
-          supabase.from("projects").select("*").eq("status", "ACTIVE").order("name"),
+          supabase
+            .from("accounts")
+            .select("*")
+            .eq("is_active", true)
+            .is("archived_at", null)
+            .order("name"),
+          supabase
+            .from("categories")
+            .select("*")
+            .eq("is_active", true)
+            .order("name"),
+          supabase
+            .from("goals")
+            .select("*")
+            .eq("status", "ACTIVE")
+            .order("name"),
+          supabase
+            .from("debts")
+            .select("*")
+            .in("status", ["OPEN", "PARTIALLY_PAID"])
+            .order("person_name"),
+          supabase
+            .from("projects")
+            .select("*")
+            .eq("status", "ACTIVE")
+            .order("name"),
         ]);
 
         const accs = (accRes.data as Account[]) ?? [];
@@ -130,15 +170,19 @@ function QuickRegisterFormInner({
   }, []);
 
   const currentCategories = categories.filter((c) =>
-    action === "INCOME" || (action === "PROJECT" && projectTxType === "PROJECT_INCOME")
+    action === "INCOME" ||
+    (action === "PROJECT" && projectTxType === "PROJECT_INCOME")
       ? c.kind === "INCOME"
-      : c.kind === "EXPENSE"
+      : c.kind === "EXPENSE",
   );
 
-  const effectiveCategoryId = selectedCategoryId || currentCategories[0]?.id || "";
+  const effectiveCategoryId =
+    selectedCategoryId || currentCategories[0]?.id || "";
   const effectiveAccountId = selectedAccountId || accounts[0]?.id || "";
   const effectiveDestinationAccountId =
-    selectedDestinationAccountId || accounts.find((a) => a.id !== effectiveAccountId)?.id || "";
+    selectedDestinationAccountId ||
+    accounts.find((a) => a.id !== effectiveAccountId)?.id ||
+    "";
   const effectiveGoalId = selectedGoalId || goals[0]?.id || "";
   const effectiveDebtId = selectedDebtId || debts[0]?.id || "";
   const effectiveProjectId = selectedProjectId || projects[0]?.id || "";
@@ -150,7 +194,7 @@ function QuickRegisterFormInner({
 
     const numAmount = parseFloat(amount.replace(/\s+/g, "").replace(",", "."));
     if (isNaN(numAmount) || numAmount <= 0) {
-      setError("Por favor, insere um valor v�lido maior que 0.");
+      setError("Por favor, insere um valor válido maior que 0.");
       return;
     }
 
@@ -165,7 +209,8 @@ function QuickRegisterFormInner({
 
     try {
       if (action === "INCOME") {
-        if (!effectiveAccountId || !effectiveCategoryId) throw new Error("Selecciona a carteira e a categoria.");
+        if (!effectiveAccountId || !effectiveCategoryId)
+          throw new Error("Selecciona a carteira e a categoria.");
         await createIncome(supabase, {
           accountId: effectiveAccountId,
           amount: numAmount,
@@ -173,9 +218,10 @@ function QuickRegisterFormInner({
           date: safeDate,
           description: description.trim() || undefined,
         });
-        setSuccessMessage(`? Ganho de ${numAmount} Kz registado com sucesso!`);
+        setSuccessMessage(`Ganho de ${numAmount} Kz registado com sucesso!`);
       } else if (action === "EXPENSE") {
-        if (!effectiveAccountId || !effectiveCategoryId) throw new Error("Selecciona a carteira e a categoria.");
+        if (!effectiveAccountId || !effectiveCategoryId)
+          throw new Error("Selecciona a carteira e a categoria.");
         await createExpense(supabase, {
           accountId: effectiveAccountId,
           amount: numAmount,
@@ -183,10 +229,12 @@ function QuickRegisterFormInner({
           date: safeDate,
           description: description.trim() || undefined,
         });
-        setSuccessMessage(`? Gasto de ${numAmount} Kz registado com sucesso!`);
+        setSuccessMessage(`Gasto de ${numAmount} Kz registado com sucesso!`);
       } else if (action === "TRANSFER") {
-        if (!effectiveAccountId || !effectiveDestinationAccountId) throw new Error("Selecciona as contas de origem e destino.");
-        if (effectiveAccountId === effectiveDestinationAccountId) throw new Error("A conta de destino n�o pode ser igual � de origem.");
+        if (!effectiveAccountId || !effectiveDestinationAccountId)
+          throw new Error("Selecciona as contas de origem e destino.");
+        if (effectiveAccountId === effectiveDestinationAccountId)
+          throw new Error("A conta de destino não pode ser igual à de origem.");
         await createTransfer(supabase, {
           accountId: effectiveAccountId,
           destinationAccountId: effectiveDestinationAccountId,
@@ -194,9 +242,12 @@ function QuickRegisterFormInner({
           date: safeDate,
           description: description.trim() || undefined,
         });
-        setSuccessMessage(`? Transfer�ncia de ${numAmount} Kz realizada com sucesso!`);
+        setSuccessMessage(
+          `Transferência de ${numAmount} Kz realizada com sucesso!`,
+        );
       } else if (action === "GOAL") {
-        if (!effectiveGoalId || !effectiveAccountId) throw new Error("Selecciona a meta e a carteira.");
+        if (!effectiveGoalId || !effectiveAccountId)
+          throw new Error("Selecciona a meta e a carteira.");
         await contributeToGoal(supabase, {
           goalId: effectiveGoalId,
           accountId: effectiveAccountId,
@@ -204,10 +255,10 @@ function QuickRegisterFormInner({
           date: safeDate,
           description: description.trim() || undefined,
         });
-        setSuccessMessage(`? Poupan�a de ${numAmount} Kz adicionada � meta!`);
+        setSuccessMessage(`Poupança de ${numAmount} Kz adicionada à meta!`);
       } else if (action === "NEW_DEBT") {
         if (!personName.trim()) throw new Error("Indica o nome da pessoa.");
-        if (!userId) throw new Error("Sess�o inv�lida.");
+        if (!userId) throw new Error("Sessão inválida.");
         await createDebt(supabase, {
           user_id: userId,
           person_name: personName.trim(),
@@ -216,9 +267,10 @@ function QuickRegisterFormInner({
           due_date: safeDate ?? null,
           description: description.trim() || null,
         });
-        setSuccessMessage(`? D�vida registada com sucesso!`);
+        setSuccessMessage(`Dívida registada com sucesso!`);
       } else if (action === "PAY_DEBT") {
-        if (!effectiveDebtId || !effectiveAccountId) throw new Error("Selecciona a d�vida e a carteira.");
+        if (!effectiveDebtId || !effectiveAccountId)
+          throw new Error("Selecciona a dívida e a carteira.");
         await payDebt(supabase, {
           debtId: effectiveDebtId,
           accountId: effectiveAccountId,
@@ -226,10 +278,11 @@ function QuickRegisterFormInner({
           date: safeDate,
           description: description.trim() || undefined,
         });
-        setSuccessMessage(`? Pagamento de d�vida de ${numAmount} Kz registado!`);
+        setSuccessMessage(`Pagamento de dívida de ${numAmount} Kz registado!`);
       } else if (action === "PROJECT") {
-        if (!effectiveProjectId || !effectiveAccountId) throw new Error("Selecciona o projecto e a carteira.");
-        if (!userId) throw new Error("Sess�o inv�lida.");
+        if (!effectiveProjectId || !effectiveAccountId)
+          throw new Error("Selecciona o projecto e a carteira.");
+        if (!userId) throw new Error("Sessão inválida.");
         await createProjectTransaction(supabase, {
           userId,
           projectId: effectiveProjectId,
@@ -240,7 +293,7 @@ function QuickRegisterFormInner({
           date: safeDate,
           description: description.trim() || undefined,
         });
-        setSuccessMessage(`? Movimento do projecto registado com sucesso!`);
+        setSuccessMessage(`Movimento do projecto registado com sucesso!`);
       }
 
       router.refresh();
@@ -249,7 +302,10 @@ function QuickRegisterFormInner({
         onClose();
       }, 600);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "N�o foi poss�vel guardar este movimento. Tenta novamente.";
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Não foi possível guardar este movimento. Tenta novamente.";
       setError(msg);
     } finally {
       setLoading(false);
@@ -291,10 +347,10 @@ function QuickRegisterFormInner({
       ) : accounts.length === 0 && action !== "NEW_DEBT" ? (
         <div className="my-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-center">
           <p className="text-sm font-medium text-amber-900">
-            Ainda n�o tens nenhuma carteira criada.
+            Ainda não tens nenhuma carteira criada.
           </p>
           <p className="mt-1 text-xs text-amber-700">
-            Cria a tua primeira carteira para poderes registar ganhos, gastos ou transfer�ncias.
+            Cria a tua primeira carteira para poderes registar ganhos, gastos ou transferências.
           </p>
           <Button
             size="sm"
@@ -339,7 +395,8 @@ function QuickRegisterFormInner({
                 >
                   {currentCategories.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.icon ? `${c.icon} ` : ""}{c.name}
+                      {c.icon ? `${c.icon} ` : ""}
+                      {c.name}
                     </option>
                   ))}
                 </Select>
@@ -374,7 +431,8 @@ function QuickRegisterFormInner({
                 >
                   {currentCategories.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.icon ? `${c.icon} ` : ""}{c.name}
+                      {c.icon ? `${c.icon} ` : ""}
+                      {c.name}
                     </option>
                   ))}
                 </Select>
@@ -419,7 +477,9 @@ function QuickRegisterFormInner({
                 <Select
                   id="tr-dest"
                   value={effectiveDestinationAccountId}
-                  onChange={(e) => setSelectedDestinationAccountId(e.target.value)}
+                  onChange={(e) =>
+                    setSelectedDestinationAccountId(e.target.value)
+                  }
                   required
                 >
                   {accounts
@@ -439,7 +499,9 @@ function QuickRegisterFormInner({
               <div className="space-y-1.5">
                 <Label htmlFor="goal-select">Meta</Label>
                 {goals.length === 0 ? (
-                  <p className="text-xs text-amber-600">Sem metas activas. Cria uma primeiro.</p>
+                  <p className="text-xs text-amber-600">
+                    Sem metas activas. Cria uma primeiro.
+                  </p>
                 ) : (
                   <Select
                     id="goal-select"
@@ -491,7 +553,9 @@ function QuickRegisterFormInner({
                   <Select
                     id="debt-type"
                     value={debtType}
-                    onChange={(e) => setDebtType(e.target.value as "I_OWE" | "OWED_TO_ME")}
+                    onChange={(e) =>
+                      setDebtType(e.target.value as "I_OWE" | "OWED_TO_ME")
+                    }
                     required
                   >
                     <option value="I_OWE">Eu devo</option>
@@ -505,9 +569,11 @@ function QuickRegisterFormInner({
           {action === "PAY_DEBT" && (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="pay-debt-select">D�vida a pagar</Label>
+                <Label htmlFor="pay-debt-select">Dívida a pagar</Label>
                 {debts.length === 0 ? (
-                  <p className="text-xs text-amber-600">Sem d�vidas pendentes.</p>
+                  <p className="text-xs text-amber-600">
+                    Sem dívidas pendentes.
+                  </p>
                 ) : (
                   <Select
                     id="pay-debt-select"
@@ -517,7 +583,8 @@ function QuickRegisterFormInner({
                   >
                     {debts.map((d) => (
                       <option key={d.id} value={d.id}>
-                        {d.type === "I_OWE" ? "Eu devo a " : "Devem-me de "} {d.person_name} ({d.remaining_amount} Kz)
+                        {d.type === "I_OWE" ? "Eu devo a " : "Devem-me de "}{" "}
+                        {d.person_name} ({d.remaining_amount} Kz)
                       </option>
                     ))}
                   </Select>
@@ -547,7 +614,9 @@ function QuickRegisterFormInner({
                 <div className="space-y-1.5">
                   <Label htmlFor="proj-select">Projecto</Label>
                   {projects.length === 0 ? (
-                    <p className="text-xs text-amber-600">Sem projectos activos.</p>
+                    <p className="text-xs text-amber-600">
+                      Sem projectos activos.
+                    </p>
                   ) : (
                     <Select
                       id="proj-select"
@@ -568,7 +637,11 @@ function QuickRegisterFormInner({
                   <Select
                     id="proj-type"
                     value={projectTxType}
-                    onChange={(e) => setProjectTxType(e.target.value as "PROJECT_EXPENSE" | "PROJECT_INCOME")}
+                    onChange={(e) =>
+                      setProjectTxType(
+                        e.target.value as "PROJECT_EXPENSE" | "PROJECT_INCOME",
+                      )
+                    }
                     required
                   >
                     <option value="PROJECT_EXPENSE">Gasto do Projecto</option>
@@ -602,7 +675,8 @@ function QuickRegisterFormInner({
                     <option value="">Sem categoria</option>
                     {currentCategories.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.icon ? `${c.icon} ` : ""}{c.name}
+                        {c.icon ? `${c.icon} ` : ""}
+                        {c.name}
                       </option>
                     ))}
                   </Select>
@@ -624,10 +698,10 @@ function QuickRegisterFormInner({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="quick-desc">Descri��o (opcional)</Label>
+              <Label htmlFor="quick-desc">Descrição (opcional)</Label>
               <Input
                 id="quick-desc"
-                placeholder="Ex: Almo�o, Sal�rio, etc."
+                placeholder="Ex: Almoço, Salário, etc."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
@@ -636,13 +710,19 @@ function QuickRegisterFormInner({
 
           {/* Feedback Messages */}
           {error && (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700" role="alert">
+            <div
+              className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700"
+              role="alert"
+            >
               {error}
             </div>
           )}
 
           {successMessage && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800" role="status">
+            <div
+              className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800"
+              role="status"
+            >
               {successMessage}
             </div>
           )}
@@ -652,7 +732,9 @@ function QuickRegisterFormInner({
             <Button
               type="submit"
               fullWidth
-              disabled={loading || (accounts.length === 0 && action !== "NEW_DEBT")}
+              disabled={
+                loading || (accounts.length === 0 && action !== "NEW_DEBT")
+              }
             >
               {loading ? "A guardar..." : "Guardar Registo"}
             </Button>
@@ -672,7 +754,12 @@ export function QuickRegisterModal({
   if (!isOpen) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="O que aconteceu?" maxWidth="md">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="O que aconteceu?"
+      maxWidth="md"
+    >
       <QuickRegisterFormInner
         key={`${defaultAction}-${isOpen}`}
         initialAction={defaultAction}

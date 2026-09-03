@@ -9,14 +9,7 @@ type ModalProps = {
   title?: string;
   description?: string;
   children: React.ReactNode;
-  maxWidth?: "sm" | "md" | "lg" | "xl";
-};
-
-const maxWidthClasses = {
-  sm: "max-w-sm",
-  md: "max-w-md",
-  lg: "max-w-lg",
-  xl: "max-w-xl",
+  maxWidth?: "sm" | "md" | "lg";
 };
 
 export function Modal({
@@ -25,72 +18,81 @@ export function Modal({
   title,
   description,
   children,
-  maxWidth = "md",
+  maxWidth = "sm",
 }: ModalProps) {
-  const overlayRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape" && isOpen) {
-        onClose();
-      }
+      if (e.key === "Escape") onClose();
     }
     if (isOpen) {
+      document.addEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "hidden";
-      window.addEventListener("keydown", handleKeyDown);
-    } else {
-      document.body.style.overflow = "";
     }
     return () => {
+      document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
-      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
+  const maxWClass =
+    maxWidth === "sm"
+      ? "max-w-md"
+      : maxWidth === "md"
+        ? "max-w-lg"
+        : "max-w-2xl";
+
   return (
     <div
-      ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 backdrop-blur-xs sm:items-center sm:p-4"
-      onClick={(e) => {
-        if (e.target === overlayRef.current) onClose();
-      }}
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
       role="dialog"
       aria-modal="true"
+      aria-labelledby={title ? "modal-title" : undefined}
     >
+      {/* Backdrop */}
+      <button
+        type="button"
+        aria-label="Fechar"
+        className="absolute inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity"
+        onClick={onClose}
+      />
+
+      {/* Panel */}
       <div
+        ref={dialogRef}
         className={cn(
-          "w-full rounded-t-3xl border-t border-kumbu-100 bg-white p-6 shadow-xl transition-all sm:rounded-2xl sm:border sm:shadow-lg",
-          "max-h-[90vh] overflow-y-auto",
-          maxWidthClasses[maxWidth]
+          "relative z-10 w-full bg-white shadow-xl",
+          "rounded-t-3xl sm:rounded-2xl",
+          "max-h-[92dvh] overflow-y-auto",
+          maxWClass,
         )}
       >
-        <div className="flex items-start justify-between pb-4">
-          <div>
-            {title && (
-              <h2 className="text-lg font-semibold text-kumbu-900">{title}</h2>
-            )}
-            {description && (
-              <p className="mt-1 text-xs text-kumbu-500">{description}</p>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Fechar"
-            className="rounded-lg p-1.5 text-kumbu-400 hover:bg-kumbu-50 hover:text-kumbu-700"
-          >
-            <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path
-                fillRule="evenodd"
-                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </button>
+        {/* Drag handle (mobile) */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+          <div className="h-1 w-10 rounded-full bg-kumbu-200" />
         </div>
-        <div className="pt-2">{children}</div>
+
+        <div className="px-5 pb-6 pt-4 sm:p-6">
+          {(title || description) && (
+            <div className="mb-5">
+              {title && (
+                <h2
+                  id="modal-title"
+                  className="text-base font-semibold text-kumbu-900"
+                >
+                  {title}
+                </h2>
+              )}
+              {description && (
+                <p className="mt-1 text-sm text-kumbu-500">{description}</p>
+              )}
+            </div>
+          )}
+          {children}
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAccounts } from "@/lib/services/accounts";
 import { getFinancialDiary } from "@/lib/services/transactions";
-import { getTodaySummary, getCurrentMonthSummary, getNetWorth } from "@/lib/services/reports";
+import {
+  getTodaySummary,
+  getCurrentMonthSummary,
+  getNetWorth,
+} from "@/lib/services/reports";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
 
 export default async function HomePage() {
@@ -30,11 +34,16 @@ export default async function HomePage() {
     getFinancialDiary(supabase, { limit: 10 }),
   ]);
 
-  const displayName = profile?.full_name?.split(" ")[0] ?? "a�";
+  const displayName =
+    profile?.full_name?.split(" ")[0] ??
+    user?.email?.split("@")[0] ??
+    "Utilizador";
   const currency = profile?.preferred_currency ?? "AOA";
-  
+
   // Calculate total balance from net_worth view or sum of accounts
-  const totalBalance = netWorth?.net_worth ?? accounts.reduce((sum, a) => sum + (a.current_balance ?? 0), 0);
+  const totalBalance =
+    netWorth?.net_worth ??
+    accounts.reduce((sum, a) => sum + (a.current_balance ?? 0), 0);
 
   return (
     <DashboardView

@@ -28,69 +28,84 @@ export function ReportsView({
   categoryIncomes,
   accountExpenses,
 }: ReportsViewProps) {
-  const [activeTab, setActiveTab] = useState<"CATEGORIES" | "MONTHS" | "ACCOUNTS">("CATEGORIES");
+  const [activeTab, setActiveTab] = useState<
+    "CATEGORIES" | "MONTHS" | "ACCOUNTS"
+  >("CATEGORIES");
 
   const totalAssets = netWorth?.total_assets ?? 0;
   const totalLiabilities = netWorth?.total_liabilities ?? 0;
-  const totalNetWorth = netWorth?.net_worth ?? (totalAssets - totalLiabilities);
+  const totalNetWorth =
+    netWorth?.net_worth ?? totalAssets - totalLiabilities;
 
-  const totalExpenseBreakdown = categoryExpenses.reduce((sum, c) => sum + (c.total ?? 0), 0);
-  const totalIncomeBreakdown = categoryIncomes.reduce((sum, c) => sum + (c.total ?? 0), 0);
+  const totalExpenseBreakdown = categoryExpenses.reduce(
+    (sum, c) => sum + (c.total ?? 0),
+    0,
+  );
+  const totalIncomeBreakdown = categoryIncomes.reduce(
+    (sum, c) => sum + (c.total ?? 0),
+    0,
+  );
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-kumbu-900">
-          Relat�rios & An�lise
+          Relatórios & Análise
         </h1>
         <p className="mt-0.5 text-sm text-kumbu-500">
-          Vis�o detalhada sobre patrim�nio, distribui��o de categorias e hist�rico de evolu��o.
+          Visão detalhada sobre património, distribuição de categorias e histórico de evolução.
         </p>
       </div>
 
-      {/* Patrim�nio L�quido Overview */}
+      {/* Património Líquido Overview */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-3xl border border-kumbu-100 bg-white p-5 shadow-xs space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-wider text-kumbu-400">
-            Patrim�nio L�quido
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-kumbu-400">
+            Património Líquido
           </p>
-          <p className="text-2xl font-extrabold text-kumbu-900">
+          <p className="text-2xl font-extrabold text-kumbu-900 tabular-nums">
             {formatCurrency(totalNetWorth)}
           </p>
-          <p className="text-[11px] text-kumbu-500">Activos subtra�dos de passivos</p>
+          <p className="text-[11px] text-kumbu-400">
+            Activos subtraídos de passivos
+          </p>
         </div>
 
-        <div className="rounded-3xl border border-emerald-100 bg-emerald-50/40 p-5 space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
-            Total Activos (Saldos + A Receber)
+        <div className="rounded-3xl border border-emerald-100 bg-emerald-50/50 p-5 space-y-1">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-emerald-700">
+            Total Activos
           </p>
-          <p className="text-2xl font-extrabold text-emerald-800">
+          <p className="text-2xl font-extrabold text-emerald-800 tabular-nums">
             {formatCurrency(totalAssets)}
           </p>
-          <p className="text-[11px] text-emerald-600">Dinheiro em contas e direitos</p>
+          <p className="text-[11px] text-emerald-600">
+            Saldos em carteiras e a receber
+          </p>
         </div>
 
-        <div className="rounded-3xl border border-rose-100 bg-rose-50/40 p-5 space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-wider text-rose-700">
-            Total Passivos (D�vidas a Pagar)
+        <div className="rounded-3xl border border-rose-100 bg-rose-50/50 p-5 space-y-1">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-rose-700">
+            Total Passivos
           </p>
-          <p className="text-2xl font-extrabold text-rose-800">
+          <p className="text-2xl font-extrabold text-rose-800 tabular-nums">
             {formatCurrency(totalLiabilities)}
           </p>
-          <p className="text-[11px] text-rose-600">Obriga��es e d�vidas pendentes</p>
+          <p className="text-[11px] text-rose-600">
+            Obrigações e dívidas a pagar
+          </p>
         </div>
       </div>
 
       {/* Section Tabs */}
-      <div className="flex border-b border-kumbu-100 pb-2">
+      <div className="flex gap-4 border-b border-kumbu-100">
         <button
           type="button"
           onClick={() => setActiveTab("CATEGORIES")}
-          className={`px-4 py-2 text-sm font-semibold transition-colors ${
+          className={`pb-2.5 text-sm font-semibold transition-colors ${
             activeTab === "CATEGORIES"
-              ? "border-b-2 border-kumbu-900 text-kumbu-900"
-              : "text-kumbu-500 hover:text-kumbu-800"
+              ? "border-b-2 border-kumbu-700 text-kumbu-900"
+              : "text-kumbu-400 hover:text-kumbu-700"
           }`}
         >
           Por Categorias
@@ -98,21 +113,21 @@ export function ReportsView({
         <button
           type="button"
           onClick={() => setActiveTab("MONTHS")}
-          className={`px-4 py-2 text-sm font-semibold transition-colors ${
+          className={`pb-2.5 text-sm font-semibold transition-colors ${
             activeTab === "MONTHS"
-              ? "border-b-2 border-kumbu-900 text-kumbu-900"
-              : "text-kumbu-500 hover:text-kumbu-800"
+              ? "border-b-2 border-kumbu-700 text-kumbu-900"
+              : "text-kumbu-400 hover:text-kumbu-700"
           }`}
         >
-          Evolu��o Mensal
+          Evolução Mensal
         </button>
         <button
           type="button"
           onClick={() => setActiveTab("ACCOUNTS")}
-          className={`px-4 py-2 text-sm font-semibold transition-colors ${
+          className={`pb-2.5 text-sm font-semibold transition-colors ${
             activeTab === "ACCOUNTS"
-              ? "border-b-2 border-kumbu-900 text-kumbu-900"
-              : "text-kumbu-500 hover:text-kumbu-800"
+              ? "border-b-2 border-kumbu-700 text-kumbu-900"
+              : "text-kumbu-400 hover:text-kumbu-700"
           }`}
         >
           Por Carteiras
@@ -133,19 +148,24 @@ export function ReportsView({
 
             {categoryExpenses.length === 0 ? (
               <p className="py-6 text-center text-xs text-kumbu-400">
-                Ainda n�o h� dados de despesas por categoria.
+                Ainda não há dados de despesas por categoria.
               </p>
             ) : (
               <div className="space-y-3 pt-2">
                 {categoryExpenses.map((cat, idx) => {
                   const total = cat.total ?? 0;
-                  const pct = totalExpenseBreakdown > 0 ? Math.round((total / totalExpenseBreakdown) * 100) : 0;
+                  const pct =
+                    totalExpenseBreakdown > 0
+                      ? Math.round((total / totalExpenseBreakdown) * 100)
+                      : 0;
 
                   return (
                     <div key={idx} className="space-y-1">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-kumbu-900">{cat.category ?? "Sem Categoria"}</span>
-                        <span className="text-kumbu-600 font-medium">
+                        <span className="font-semibold text-kumbu-900">
+                          {cat.category ?? "Sem Categoria"}
+                        </span>
+                        <span className="text-kumbu-600 font-medium tabular-nums">
                           {formatCurrency(total)} ({pct}%)
                         </span>
                       </div>
@@ -173,19 +193,24 @@ export function ReportsView({
 
             {categoryIncomes.length === 0 ? (
               <p className="py-6 text-center text-xs text-kumbu-400">
-                Ainda n�o h� dados de receitas por categoria.
+                Ainda não há dados de receitas por categoria.
               </p>
             ) : (
               <div className="space-y-3 pt-2">
                 {categoryIncomes.map((cat, idx) => {
                   const total = cat.total ?? 0;
-                  const pct = totalIncomeBreakdown > 0 ? Math.round((total / totalIncomeBreakdown) * 100) : 0;
+                  const pct =
+                    totalIncomeBreakdown > 0
+                      ? Math.round((total / totalIncomeBreakdown) * 100)
+                      : 0;
 
                   return (
                     <div key={idx} className="space-y-1">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-kumbu-900">{cat.category ?? "Sem Categoria"}</span>
-                        <span className="text-kumbu-600 font-medium">
+                        <span className="font-semibold text-kumbu-900">
+                          {cat.category ?? "Sem Categoria"}
+                        </span>
+                        <span className="text-kumbu-600 font-medium tabular-nums">
                           {formatCurrency(total)} ({pct}%)
                         </span>
                       </div>
@@ -208,35 +233,54 @@ export function ReportsView({
       {activeTab === "MONTHS" && (
         <Card>
           <CardHeader>
-            <CardTitle>Hist�rico de Desempenho Mensal</CardTitle>
+            <CardTitle>Histórico de Desempenho Mensal</CardTitle>
             <CardDescription>
-              Comparativo de ganhos, gastos e resultado l�quido dos �ltimos meses.
+              Comparativo de ganhos, gastos e resultado líquido dos últimos meses.
             </CardDescription>
           </CardHeader>
 
           {monthlySummaries.length === 0 ? (
             <p className="py-8 text-center text-xs text-kumbu-400">
-              Sem dados mensais registados at� ao momento.
+              Sem dados mensais registados até ao momento.
             </p>
           ) : (
             <div className="divide-y divide-kumbu-100">
               {monthlySummaries.map((m, idx) => {
                 const inc = m.income ?? 0;
                 const exp = m.expense ?? 0;
-                const net = m.net ?? (inc - exp);
+                const net = m.net ?? inc - exp;
 
                 return (
-                  <div key={idx} className="flex flex-col gap-2 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                  <div
+                    key={idx}
+                    className="flex flex-col gap-2 py-3.5 sm:flex-row sm:items-center sm:justify-between"
+                  >
                     <div>
-                      <p className="text-sm font-bold text-kumbu-900">{m.month}</p>
+                      <p className="text-sm font-bold text-kumbu-900">
+                        {m.month}
+                      </p>
                       <p className="text-xs text-kumbu-500">
-                        Ganhos: <span className="text-emerald-700 font-semibold">+{formatCurrency(inc)}</span> � Gastos: <span className="text-rose-700 font-semibold">-{formatCurrency(exp)}</span>
+                        Ganhos:{" "}
+                        <span className="text-emerald-700 font-semibold tabular-nums">
+                          +{formatCurrency(inc)}
+                        </span>{" "}
+                        · Gastos:{" "}
+                        <span className="text-rose-700 font-semibold tabular-nums">
+                          -{formatCurrency(exp)}
+                        </span>
                       </p>
                     </div>
                     <div className="sm:text-right">
-                      <p className="text-[11px] text-kumbu-400">Resultado L�quido</p>
-                      <p className={`text-sm font-extrabold ${net >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
-                        {net >= 0 ? "+" : ""}{formatCurrency(net)}
+                      <p className="text-[11px] text-kumbu-400">
+                        Resultado Líquido
+                      </p>
+                      <p
+                        className={`text-sm font-extrabold tabular-nums ${
+                          net >= 0 ? "text-emerald-700" : "text-rose-700"
+                        }`}
+                      >
+                        {net >= 0 ? "+" : ""}
+                        {formatCurrency(net)}
                       </p>
                     </div>
                   </div>
@@ -253,7 +297,7 @@ export function ReportsView({
           <CardHeader>
             <CardTitle>Despesas por Carteira</CardTitle>
             <CardDescription>
-              Distribui��o de gastos conforme a conta ou carteira de origem.
+              Distribuição de gastos conforme a conta ou carteira de origem.
             </CardDescription>
           </CardHeader>
 
@@ -264,9 +308,16 @@ export function ReportsView({
           ) : (
             <div className="space-y-3 pt-2">
               {accountExpenses.map((acc, idx) => (
-                <div key={idx} className="flex items-center justify-between rounded-xl bg-kumbu-50 p-3.5">
-                  <span className="text-sm font-semibold text-kumbu-900">{acc.account ?? "Carteira"}</span>
-                  <span className="text-sm font-bold text-rose-700">-{formatCurrency(acc.total)}</span>
+                <div
+                  key={idx}
+                  className="flex items-center justify-between rounded-xl bg-kumbu-50 p-3.5"
+                >
+                  <span className="text-sm font-semibold text-kumbu-900">
+                    {acc.account ?? "Carteira"}
+                  </span>
+                  <span className="text-sm font-bold text-rose-700 tabular-nums">
+                    -{formatCurrency(acc.total)}
+                  </span>
                 </div>
               ))}
             </div>
