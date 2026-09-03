@@ -26,35 +26,92 @@ export function RegisterForm() {
     setSuccess(null);
     setLoading(true);
 
-    const supabase = createClient();
-    const { error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-        },
-      },
-    });
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    if (signUpError) {
-      setError("Não foi possível criar a conta. Tenta novamente.");
+    if (!supabaseUrl || !supabaseKey) {
+      setError(
+        "Configuração em falta: As variáveis NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY não estão configuradas na Vercel (Project Settings > Environment Variables).",
+      );
       setLoading(false);
       return;
     }
 
-    const { data: sessionData } = await supabase.auth.getSession();
+    try {
+      const supabase = createClient();
+      const redirectUrl =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/auth/callback`
+          : undefined;
 
-    if (sessionData.session) {
-      router.push("/");
-      router.refresh();
-      return;
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName.trim(),
+          },
+        },
+      });
+
+      if (signUpError) {
+        console.error("Erro no signUp Supabase:", signUpError);
+        let msg = signUpError.message;
+        if (msg.includes("User already registered") || msg.includes("already registered")) {
+          msg = "Este email já se encontra registado. Tenta iniciar sessão ou recuperar a palavra-passe.";
+        } else if (msg.includes("Password should be at least")) {
+          msg = "A palavra-passe deve ter pelo menos 6 caracteres.";
+        } else if (msg.toLowerCase().includes("rate limit")) {
+          msg = "Limite de tentativas excedido. Aguarda alguns minutos e tenta novamente.";
+        } else if (msg.includes("Signups not allowed")) {
+          msg = "Os novos registos estão desativados nas configurações de autenticação do Supabase.";
+        } else if (msg.includes("Database error saving new user")) {
+          msg = "Erro ao criar utilizador na base de dados (trigger do Supabase). Verifica a tabela profiles.";
+        }
+        setError(msg);
+        setLoading(false);
+        return;
+      }
+
+      // Se o utilizador já existe com confirmação por email activa, o Supabase devolve identities vazio
+      if (
+        signUpData?.user &&
+        signUpData.user.identities &&
+        signUpData.user.identities.length === 0
+      ) {
+        setError("Este email já se encontra registado. Tenta iniciar sessão.");
+        setLoading(false);
+        return;
+      }
+
+      // Se devolveu sessão directamente (confirmação por email desactivada no Supabase)
+      if (signUpData?.session) {
+        router.push("/");
+        router.refresh();
+        return;
+      }
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData.session) {
+        router.push("/");
+        router.refresh();
+        return;
+      }
+
+      setSuccess(
+        "Conta criada com sucesso! Se a confirmação por email estiver activa, verifica a tua caixa de entrada para confirmar o registo antes de entrar.",
+      );
+    } catch (err: unknown) {
+      console.error("Erro inesperado no registo:", err);
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Erro de ligação. Verifica as variáveis de ambiente na Vercel.";
+      setError(msg);
+    } finally {
+      setLoading(false);
     }
-
-    setSuccess(
-      "Conta criada. Verifica o teu email para confirmar o registo, se necessário.",
-    );
-    setLoading(false);
   }
 
   return (
@@ -107,15 +164,21 @@ export function RegisterForm() {
         </div>
 
         {error && (
-          <p className="text-sm text-red-600" role="alert">
+          <div
+            className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700"
+            role="alert"
+          >
             {error}
-          </p>
+          </div>
         )}
 
         {success && (
-          <p className="text-sm text-kumbu-700" role="status">
+          <div
+            className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800"
+            role="status"
+          >
             {success}
-          </p>
+          </div>
         )}
 
         <Button type="submit" fullWidth disabled={loading}>

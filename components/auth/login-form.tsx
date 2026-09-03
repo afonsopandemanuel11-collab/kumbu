@@ -25,20 +25,52 @@ export function LoginForm() {
     setError(null);
     setLoading(true);
 
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    if (signInError) {
-      setError("Email ou palavra-passe incorrectos. Tenta novamente.");
+    if (!supabaseUrl || !supabaseKey) {
+      setError(
+        "Configuração em falta: As variáveis NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY não estão configuradas na Vercel.",
+      );
       setLoading(false);
       return;
     }
 
-    router.push(redirectTo);
-    router.refresh();
+    try {
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (signInError) {
+        console.error("Erro no signIn Supabase:", signInError);
+        let msg = signInError.message;
+        if (
+          msg.includes("Invalid login credentials") ||
+          msg.includes("invalid_grant")
+        ) {
+          msg = "Email ou palavra-passe incorrectos. Tenta novamente.";
+        } else if (msg.includes("Email not confirmed")) {
+          msg =
+            "O teu email ainda não foi confirmado. Verifica a tua caixa de correio para confirmar a conta antes de entrar.";
+        }
+        setError(msg);
+        setLoading(false);
+        return;
+      }
+
+      router.push(redirectTo);
+      router.refresh();
+    } catch (err: unknown) {
+      console.error("Erro inesperado no login:", err);
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Erro de ligação ao servidor. Tenta novamente.";
+      setError(msg);
+      setLoading(false);
+    }
   }
 
   return (
@@ -85,9 +117,12 @@ export function LoginForm() {
         </div>
 
         {error && (
-          <p className="text-sm text-red-600" role="alert">
+          <div
+            className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700"
+            role="alert"
+          >
             {error}
-          </p>
+          </div>
         )}
 
         <Button type="submit" fullWidth disabled={loading}>
