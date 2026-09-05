@@ -40,6 +40,9 @@ export function AccountsView({ initialAccounts, userId }: AccountsViewProps) {
   const activeAccounts = initialAccounts.filter(
     (a) => a.is_active && !a.archived_at,
   );
+  const [selectedAllocAccountId, setSelectedAllocAccountId] = useState<string>(
+    activeAccounts[0]?.id ?? ""
+  );
   const archivedAccounts = initialAccounts.filter(
     (a) => !a.is_active || a.archived_at,
   );
@@ -111,6 +114,110 @@ export function AccountsView({ initialAccounts, userId }: AccountsViewProps) {
               onEdit={() => handleEdit(acc)}
             />
           ))}
+        </div>
+      )}
+
+      {/* Carteira Física & Alocações Internas (Prompt Item 10) */}
+      {activeAccounts.length > 0 && (
+        <div className="rounded-3xl border border-kumbu-100 bg-white p-5 space-y-4 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🗂️</span>
+                <h2 className="text-sm font-bold text-kumbu-900">
+                  Carteira Física ≠ Finalidade do Dinheiro
+                </h2>
+              </div>
+              <p className="text-xs text-kumbu-500 mt-0.5">
+                O dinheiro pode estar na mesma conta bancária, mas o Kumbu ajuda-te a planear a finalidade de cada parcela.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label
+                htmlFor="alloc-acc-select"
+                className="text-xs text-kumbu-500 shrink-0"
+              >
+                Analisar carteira:
+              </label>
+              <select
+                id="alloc-acc-select"
+                value={selectedAllocAccountId || activeAccounts[0]?.id}
+                onChange={(e) => setSelectedAllocAccountId(e.target.value)}
+                className="rounded-xl border border-kumbu-200 bg-kumbu-50/50 px-3 py-1.5 text-xs font-semibold text-kumbu-900 focus:outline-none focus:ring-1 focus:ring-kumbu-500"
+              >
+                {activeAccounts.map((acc) => (
+                  <option key={acc.id} value={acc.id}>
+                    {acc.name} ({formatCurrency(acc.current_balance, acc.currency)})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {(() => {
+            const currentAcc =
+              activeAccounts.find(
+                (a) =>
+                  a.id === (selectedAllocAccountId || activeAccounts[0]?.id)
+              ) || activeAccounts[0];
+            const bal = currentAcc ? Math.max(0, currentAcc.current_balance) : 0;
+            const curr = currentAcc?.currency ?? "AOA";
+
+            const allocations = [
+              { label: "Investimento / Futuro", pct: 20, color: "bg-blue-500" },
+              { label: "Eu / Lazer & Bem-estar", pct: 20, color: "bg-amber-500" },
+              { label: "Fundo Protegido (Reserva)", pct: 10, color: "bg-purple-500" },
+              {
+                label: "Família / Compromissos",
+                pct: 30,
+                color: "bg-emerald-500",
+              },
+              { label: "Projectos & Objectivos", pct: 20, color: "bg-kumbu-600" },
+            ];
+
+            return (
+              <div className="space-y-4 pt-1">
+                {/* Visual multi-segment bar */}
+                <div className="h-3 w-full overflow-hidden rounded-full flex bg-kumbu-100">
+                  {allocations.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className={`${item.color} h-full transition-all`}
+                      style={{ width: `${item.pct}%` }}
+                      title={`${item.label} (${item.pct}%)`}
+                    />
+                  ))}
+                </div>
+
+                {/* Allocation cards breakdown */}
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
+                  {allocations.map((item, idx) => {
+                    const allocatedAmount = Math.round(bal * (item.pct / 100));
+                    return (
+                      <div
+                        key={idx}
+                        className="rounded-2xl border border-kumbu-100 bg-kumbu-50/40 p-3 space-y-1"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span className={`h-2 w-2 rounded-full ${item.color}`} />
+                          <span className="text-[11px] font-medium text-kumbu-700 truncate">
+                            {item.label}
+                          </span>
+                        </div>
+                        <p className="text-xs font-bold text-kumbu-900 tabular-nums">
+                          {formatCurrency(allocatedAmount, curr)}
+                        </p>
+                        <p className="text-[10px] text-kumbu-400">
+                          {item.pct}% da carteira
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 

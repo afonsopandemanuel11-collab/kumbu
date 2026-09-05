@@ -77,3 +77,32 @@ export async function updateGoal(
   if (error) throw error;
   return data;
 }
+
+export async function getGoalById(
+  supabase: SupabaseClient<Database>,
+  goalId: string
+) {
+  const { data, error } = await supabase
+    .from("goals")
+    .select("*, accounts(name)")
+    .eq("id", goalId)
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getGoalContributions(
+  supabase: SupabaseClient<Database>,
+  goalId: string
+) {
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("*, accounts:accounts!transactions_account_id_fkey(name)")
+    .eq("goal_id", goalId)
+    .is("deleted_at", null)
+    .order("transaction_date", { ascending: false });
+
+  if (error) throw error;
+  return (data as any) ?? [];
+}

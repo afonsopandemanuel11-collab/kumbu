@@ -78,6 +78,35 @@ export async function createProject(
   return data;
 }
 
+export async function getProjectById(
+  supabase: SupabaseClient<Database>,
+  projectId: string
+) {
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*, accounts(name)")
+    .eq("id", projectId)
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getProjectTransactions(
+  supabase: SupabaseClient<Database>,
+  projectId: string
+) {
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("*, categories(name, icon), accounts:accounts!transactions_account_id_fkey(name)")
+    .eq("project_id", projectId)
+    .is("deleted_at", null)
+    .order("transaction_date", { ascending: false });
+
+  if (error) throw error;
+  return (data as any) ?? [];
+}
+
 export async function updateProject(
   supabase: SupabaseClient<Database>,
   projectId: string,

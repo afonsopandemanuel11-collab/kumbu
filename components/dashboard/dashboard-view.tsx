@@ -1,7 +1,9 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Icon } from "@/components/ui/icons";
 import { formatCurrency } from "@/lib/utils/currency";
@@ -95,6 +97,32 @@ export function DashboardView({
   const savingsRate =
     monthIncome > 0 ? Math.round((monthSaving / monthIncome) * 100) : 0;
 
+  const healthDiagnosis = useMemo(() => {
+    if (isZeroState) return null;
+    if (monthIncome > 0 && monthExpense > monthIncome) {
+      return {
+        status: "Atenção" as const,
+        color: "bg-rose-50/80 border-rose-200 text-rose-950",
+        badgeVariant: "danger" as const,
+        reason: `Os gastos deste mês (${formatCurrency(monthExpense, currency)}) ultrapassaram as entradas (${formatCurrency(monthIncome, currency)}). Prioriza compromissos essenciais e reduz saídas variáveis.`,
+      };
+    }
+    if (monthIncome > 0 && monthExpense <= monthIncome * 0.7) {
+      return {
+        status: "Melhorou" as const,
+        color: "bg-emerald-50/80 border-emerald-200 text-emerald-950",
+        badgeVariant: "success" as const,
+        reason: `Despesas sob controlo (${Math.round((monthExpense / monthIncome) * 100)}% das entradas). Taxa de poupança positiva de ${savingsRate}% e margem financeira saudável.`,
+      };
+    }
+    return {
+      status: "Estável" as const,
+      color: "bg-kumbu-50/80 border-kumbu-200 text-kumbu-950",
+      badgeVariant: "default" as const,
+      reason: `Equilíbrio entre entradas e saídas no período. Mantém o acompanhamento dos teus projectos e protege o teu fundo de reserva.`,
+    };
+  }, [isZeroState, monthIncome, monthExpense, currency, savingsRate]);
+
   return (
     <div className="space-y-6">
       {/* Page greeting */}
@@ -169,6 +197,33 @@ export function DashboardView({
         />
       ) : (
         <>
+          {/* Financial Health Diagnosis (Prompt Item 26) */}
+          {healthDiagnosis && (
+            <div
+              className={cn(
+                "rounded-2xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs",
+                healthDiagnosis.color
+              )}
+            >
+              <div className="flex items-start gap-3">
+                <span className="text-2xl shrink-0">🩺</span>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold uppercase tracking-wider">
+                      Situação Financeira do Período:
+                    </span>
+                    <Badge variant={healthDiagnosis.badgeVariant} size="sm">
+                      {healthDiagnosis.status}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-xs leading-relaxed opacity-90">
+                    {healthDiagnosis.reason}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Today + This Month */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <SummaryCard

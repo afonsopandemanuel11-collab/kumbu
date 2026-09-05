@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -121,11 +122,40 @@ export function ProjectsView({
                   </div>
 
                   {project.budget && (
-                    <div className="mt-3 flex items-center justify-between rounded-xl bg-kumbu-50 px-3 py-2 text-xs">
-                      <span className="text-kumbu-500">Orçamento previsto</span>
-                      <span className="font-semibold text-kumbu-900 tabular-nums">
-                        {formatCurrency(project.budget, project.currency)}
-                      </span>
+                    <div className="mt-3 space-y-1.5 rounded-xl bg-kumbu-50 p-3 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-kumbu-600">Orçamento previsto</span>
+                        <span className="font-semibold text-kumbu-900 tabular-nums">
+                          {formatCurrency(project.budget, project.currency)}
+                        </span>
+                      </div>
+                      {(() => {
+                        const pct = Math.min(
+                          100,
+                          Math.round((expense / project.budget) * 100)
+                        );
+                        const isOver = expense > project.budget;
+                        return (
+                          <div className="space-y-1 pt-1">
+                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-kumbu-200">
+                              <div
+                                className={`h-full rounded-full transition-all ${
+                                  isOver ? "bg-rose-500" : "bg-kumbu-600"
+                                }`}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-[10px] text-kumbu-400">
+                              <span>{pct}% gasto</span>
+                              <span>
+                                {isOver
+                                  ? `Excedido em ${formatCurrency(expense - project.budget, project.currency)}`
+                                  : `Resta: ${formatCurrency(project.budget - expense, project.currency)}`}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
 
@@ -164,12 +194,14 @@ export function ProjectsView({
                 </div>
 
                 <div className="flex items-center justify-between border-t border-kumbu-50 pt-3 text-xs">
-                  <span className="text-kumbu-400 text-[11px]">
-                    {project.start_date
-                      ? `Início: ${formatDate(project.start_date)}`
-                      : "Sem data de início"}
-                  </span>
-                  <div className="flex gap-2">
+                  <Link
+                    href={`/projectos/${project.id}`}
+                    className="font-semibold text-kumbu-700 hover:text-kumbu-900 transition-colors flex items-center gap-1 text-[11px]"
+                  >
+                    <span>Ver detalhes</span>
+                    <Icon name="chevron-right" className="w-3 h-3" />
+                  </Link>
+                  <div className="flex gap-1.5">
                     <button
                       type="button"
                       onClick={() => openQuickRegister("PROJECT")}

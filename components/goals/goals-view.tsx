@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -208,9 +209,13 @@ export function GoalsView({
 
                 {/* Footer */}
                 <div className="flex items-center justify-between border-t border-kumbu-50 pt-3">
-                  <span className="text-[11px] text-kumbu-400">
-                    {statusLabels[goal.status]}
-                  </span>
+                  <Link
+                    href={`/metas/${goal.id}`}
+                    className="font-semibold text-kumbu-700 hover:text-kumbu-900 transition-colors flex items-center gap-1 text-[11px]"
+                  >
+                    <span>Ver detalhes</span>
+                    <Icon name="chevron-right" className="w-3 h-3" />
+                  </Link>
                   <div className="flex gap-2">
                     {isActive && (
                       <Button

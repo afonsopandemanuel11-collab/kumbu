@@ -204,23 +204,29 @@ export function DebtsView({ initialDebts, accounts, userId }: DebtsViewProps) {
                   </p>
                 )}
 
-                <div className="rounded-xl bg-kumbu-50 px-3 py-2.5 space-y-0.5">
+                <div className="rounded-xl bg-kumbu-50 px-3 py-2.5 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-kumbu-500">Restante</span>
+                    <span className="text-[11px] text-kumbu-600">Restante a liquidar</span>
                     <span className="text-sm font-bold text-kumbu-900 tabular-nums">
                       {formatCurrency(debt.remaining_amount, debt.currency)}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-kumbu-400">Original</span>
-                    <span className="text-[11px] text-kumbu-400 tabular-nums">
-                      {formatCurrency(debt.original_amount, debt.currency)}
+                  <div className="flex items-center justify-between text-[11px] text-kumbu-500 pt-0.5 border-t border-kumbu-100/60">
+                    <span>
+                      Pago:{" "}
+                      <strong className="text-emerald-700">
+                        {formatCurrency(
+                          Math.max(0, debt.original_amount - debt.remaining_amount),
+                          debt.currency
+                        )}
+                      </strong>
                     </span>
+                    <span>Original: {formatCurrency(debt.original_amount, debt.currency)}</span>
                   </div>
                 </div>
 
                 {/* Progress bar */}
-                {paidPct > 0 && (
+                {debt.original_amount > 0 && (
                   <div className="space-y-1">
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-kumbu-100">
                       <div
@@ -228,9 +234,14 @@ export function DebtsView({ initialDebts, accounts, userId }: DebtsViewProps) {
                         style={{ width: `${paidPct}%` }}
                       />
                     </div>
-                    <p className="text-[10px] text-kumbu-400 text-right">
-                      {paidPct}% pago
-                    </p>
+                    <div className="flex justify-between text-[10px] text-kumbu-400">
+                      <span>{paidPct}% amortizado</span>
+                      <span>
+                        {debt.status === "PAID"
+                          ? "Concluído"
+                          : `Faltam ${formatCurrency(debt.remaining_amount, debt.currency)}`}
+                      </span>
+                    </div>
                   </div>
                 )}
 

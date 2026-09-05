@@ -18,11 +18,14 @@ import {
   createProjectTransaction,
 } from "@/lib/services/transactions";
 import { createDebt } from "@/lib/services/debts";
+import { formatCurrency } from "@/lib/utils/currency";
+import { cn } from "@/lib/utils/cn";
 import type { Account } from "@/lib/services/accounts";
 import type { Category } from "@/lib/services/categories";
 import type { Goal } from "@/lib/services/goals";
 import type { Debt } from "@/lib/services/debts";
 import type { Project } from "@/lib/services/projects";
+import type { BudgetVsActual } from "@/lib/services/budgets";
 
 type ActionType =
   | "INCOME"
@@ -72,6 +75,8 @@ function QuickRegisterFormInner({
   const [goals, setGoals] = useState<Goal[]>([]);
   const [debts, setDebts] = useState<Debt[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [budgetsVsActual, setBudgetsVsActual] = useState<BudgetVsActual[]>([]);
+  const [showAllocationPreview, setShowAllocationPreview] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
   // Form Fields
@@ -101,7 +106,7 @@ function QuickRegisterFormInner({
         if (!user) return;
         setUserId(user.id);
 
-        const [accRes, catRes, goalRes, debtRes, projRes] = await Promise.all([
+        const [accRes, catRes, goalRes, debtRes, projRes, budgetRes] = await Promise.all([
           supabase
             .from("accounts")
             .select("*")
@@ -128,7 +133,12 @@ function QuickRegisterFormInner({
             .select("*")
             .eq("status", "ACTIVE")
             .order("name"),
+          supabase
+            .from("v_budget_vs_actual")
+            .select("*"),
         ]);
+
+        setBudgetsVsActual((budgetRes.data as BudgetVsActual[]) ?? []);
 
         const accs = (accRes.data as Account[]) ?? [];
         setAccounts(accs);
@@ -384,74 +394,189 @@ function QuickRegisterFormInner({
 
           {/* Action Specific Fields */}
           {action === "EXPENSE" && (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="exp-category">Categoria</Label>
-                <Select
-                  id="exp-category"
-                  value={effectiveCategoryId}
-                  onChange={(e) => setSelectedCategoryId(e.target.value)}
-                  required
-                >
-                  {currentCategories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.icon ? `${c.icon} ` : ""}
-                      {c.name}
-                    </option>
-                  ))}
-                </Select>
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="exp-category">Categoria</Label>
+                  <Select
+                    id="exp-category"
+                    value={effectiveCategoryId}
+                    onChange={(e) => setSelectedCategoryId(e.target.value)}
+                    required
+                  >
+                    {currentCategories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.icon ? `${c.icon} ` : ""}
+                        {c.name}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="exp-account">Saiu de</Label>
+                  <Select
+                    id="exp-account"
+                    value={effectiveAccountId}
+                    onChange={(e) => setSelectedAccountId(e.target.value)}
+                    required
+                  >
+                    {accounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name} ({a.current_balance} Kz)
+                      </option>
+                    ))}
+                  </Select>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="exp-account">Saiu de</Label>
-                <Select
-                  id="exp-account"
-                  value={effectiveAccountId}
-                  onChange={(e) => setSelectedAccountId(e.target.value)}
-                  required
-                >
-                  {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name} ({a.current_balance} Kz)
-                    </option>
-                  ))}
-                </Select>
-              </div>
+
+              {/* Real-time Budget Impact Widget */}
+              {(() => {
+                const currentBudget = budgetsVsActual.find(
+                  (b) => b.category_id === effectiveCategoryId
+                );
+                if (!currentBudget || !currentBudget.budget_amount) return null;
+                const numVal =
+                  parseFloat(amount.replace(/\s+/g, "").replace(",", ".")) || 0;
+                const budgetAmt = currentBudget.budget_amount ?? 0;
+                const actualExp = currentBudget.actual_expense ?? 0;
+                const remainingAfter = budgetAmt - actualExp - numVal;
+                const isOver = remainingAfter < 0;
+
+                return (
+                  <div
+                    className={cn(
+                      "rounded-2xl border p-3.5 space-y-1.5 transition-all text-xs",
+                      isOver
+                        ? "border-rose-200 bg-rose-50/70"
+                        : "border-kumbu-100 bg-kumbu-50/70"
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-kumbu-900">
+                        Impacto no Orçamento
+                      </span>
+                      <span
+                        className={cn(
+                          "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full",
+                          isOver
+                            ? "bg-rose-100 text-rose-800"
+                            : "bg-emerald-100 text-emerald-800"
+                        )}
+                      >
+                        {isOver ? "Excede o limite" : "Dentro do limite"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-kumbu-600">
+                      <span>Orçamento: {formatCurrency(budgetAmt)}</span>
+                      <span>Gasto actual: {formatCurrency(actualExp)}</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-1 border-t border-kumbu-200/50 text-xs">
+                      <span className="font-medium text-kumbu-700">
+                        Após este gasto restará:
+                      </span>
+                      <span
+                        className={cn(
+                          "font-bold tabular-nums",
+                          isOver ? "text-rose-700" : "text-emerald-700"
+                        )}
+                      >
+                        {formatCurrency(remainingAfter)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
           {action === "INCOME" && (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="inc-category">Origem / Categoria</Label>
-                <Select
-                  id="inc-category"
-                  value={effectiveCategoryId}
-                  onChange={(e) => setSelectedCategoryId(e.target.value)}
-                  required
-                >
-                  {currentCategories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.icon ? `${c.icon} ` : ""}
-                      {c.name}
-                    </option>
-                  ))}
-                </Select>
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="inc-category">Origem / Categoria</Label>
+                  <Select
+                    id="inc-category"
+                    value={effectiveCategoryId}
+                    onChange={(e) => setSelectedCategoryId(e.target.value)}
+                    required
+                  >
+                    {currentCategories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.icon ? `${c.icon} ` : ""}
+                        {c.name}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="inc-account">Vai para</Label>
+                  <Select
+                    id="inc-account"
+                    value={effectiveAccountId}
+                    onChange={(e) => setSelectedAccountId(e.target.value)}
+                    required
+                  >
+                    {accounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="inc-account">Vai para</Label>
-                <Select
-                  id="inc-account"
-                  value={effectiveAccountId}
-                  onChange={(e) => setSelectedAccountId(e.target.value)}
-                  required
-                >
-                  {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name}
-                    </option>
-                  ))}
-                </Select>
-              </div>
+
+              {/* Dividir para Conquistar Smart Preview */}
+              {(() => {
+                const numVal =
+                  parseFloat(amount.replace(/\s+/g, "").replace(",", ".")) || 0;
+                if (numVal <= 0) return null;
+
+                return (
+                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3.5 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span>🎯</span>
+                        <span className="text-xs font-semibold text-emerald-950">
+                          Dividir para Conquistar (Sugestão)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowAllocationPreview(!showAllocationPreview)
+                        }
+                        className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-900 underline"
+                      >
+                        {showAllocationPreview ? "Ocultar" : "Ver divisão"}
+                      </button>
+                    </div>
+
+                    {showAllocationPreview && (
+                      <div className="grid grid-cols-2 gap-2 pt-1 sm:grid-cols-3">
+                        {[
+                          { label: "Investimento (20%)", val: numVal * 0.2 },
+                          { label: "Eu / Lazer (20%)", val: numVal * 0.2 },
+                          { label: "Fundo Protegido (10%)", val: numVal * 0.1 },
+                          { label: "Família (30%)", val: numVal * 0.3 },
+                          { label: "Poupança (20%)", val: numVal * 0.2 },
+                        ].map((item, i) => (
+                          <div
+                            key={i}
+                            className="rounded-xl bg-white p-2 border border-emerald-100/60 shadow-2xs"
+                          >
+                            <p className="text-[10px] text-kumbu-500 truncate">
+                              {item.label}
+                            </p>
+                            <p className="text-xs font-bold text-emerald-800 tabular-nums">
+                              {formatCurrency(item.val)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           )}
 
