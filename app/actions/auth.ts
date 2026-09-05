@@ -35,6 +35,13 @@ export async function signUpAction(params: {
       console.error("Erro no signUpAction:", error);
       let msg = error.message;
       if (
+        msg.includes("fetch failed") ||
+        (error as { status?: number }).status === 0 ||
+        error.name === "AuthRetryableFetchError"
+      ) {
+        msg =
+          "Não foi possível estabelecer ligação com o servidor de autenticação. Verifica a ligação ou as variáveis de ambiente do Supabase na Vercel.";
+      } else if (
         msg.includes("User already registered") ||
         msg.includes("already registered")
       ) {
@@ -72,11 +79,11 @@ export async function signUpAction(params: {
     };
   } catch (err: unknown) {
     console.error("Excepção no signUpAction:", err);
+    const errMessage = err instanceof Error ? err.message : "";
     return {
-      error:
-        err instanceof Error
-          ? err.message
-          : "Erro de comunicação com o servidor. Tenta novamente.",
+      error: errMessage.includes("fetch failed")
+        ? "Não foi possível estabelecer ligação com o servidor de autenticação. Verifica a ligação ou as variáveis de ambiente do Supabase na Vercel."
+        : errMessage || "Erro de comunicação com o servidor. Tenta novamente.",
     };
   }
 }
@@ -97,6 +104,13 @@ export async function signInAction(params: {
       console.error("Erro no signInAction:", error);
       let msg = error.message;
       if (
+        msg.includes("fetch failed") ||
+        (error as { status?: number }).status === 0 ||
+        error.name === "AuthRetryableFetchError"
+      ) {
+        msg =
+          "Não foi possível estabelecer ligação com o servidor de autenticação. Verifica a ligação ou as variáveis de ambiente do Supabase na Vercel.";
+      } else if (
         msg.includes("Invalid login credentials") ||
         msg.includes("invalid_grant")
       ) {
@@ -114,11 +128,11 @@ export async function signInAction(params: {
     };
   } catch (err: unknown) {
     console.error("Excepção no signInAction:", err);
+    const errMessage = err instanceof Error ? err.message : "";
     return {
-      error:
-        err instanceof Error
-          ? err.message
-          : "Erro de comunicação com o servidor. Tenta novamente.",
+      error: errMessage.includes("fetch failed")
+        ? "Não foi possível estabelecer ligação com o servidor de autenticação. Verifica a ligação ou as variáveis de ambiente do Supabase na Vercel."
+        : errMessage || "Erro de comunicação com o servidor. Tenta novamente.",
     };
   }
 }
