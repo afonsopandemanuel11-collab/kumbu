@@ -26,6 +26,7 @@ import type { Goal } from "@/lib/services/goals";
 import type { Debt } from "@/lib/services/debts";
 import type { Project } from "@/lib/services/projects";
 import type { BudgetVsActual } from "@/lib/services/budgets";
+import { getAllocationRules, type AllocationRule } from "@/lib/services/allocation-rules";
 
 type ActionType =
   | "INCOME"
@@ -77,6 +78,7 @@ function QuickRegisterFormInner({
   const [projects, setProjects] = useState<Project[]>([]);
   const [budgetsVsActual, setBudgetsVsActual] = useState<BudgetVsActual[]>([]);
   const [showAllocationPreview, setShowAllocationPreview] = useState(false);
+  const [allocationRules, setAllocationRules] = useState<AllocationRule[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
 
   // Form Fields
@@ -106,7 +108,7 @@ function QuickRegisterFormInner({
         if (!user) return;
         setUserId(user.id);
 
-        const [accRes, catRes, goalRes, debtRes, projRes, budgetRes] = await Promise.all([
+        const [accRes, catRes, goalRes, debtRes, projRes, budgetRes, allocRules] = await Promise.all([
           supabase
             .from("accounts")
             .select("*")
@@ -136,8 +138,10 @@ function QuickRegisterFormInner({
           supabase
             .from("v_budget_vs_actual")
             .select("*"),
+          getAllocationRules(supabase),
         ]);
 
+        setAllocationRules(allocRules);
         setBudgetsVsActual((budgetRes.data as BudgetVsActual[]) ?? []);
 
         const accs = (accRes.data as Account[]) ?? [];
@@ -553,25 +557,26 @@ function QuickRegisterFormInner({
 
                     {showAllocationPreview && (
                       <div className="grid grid-cols-2 gap-2 pt-1 sm:grid-cols-3">
-                        {[
-                          { label: "Investimento (20%)", val: numVal * 0.2 },
-                          { label: "Eu / Lazer (20%)", val: numVal * 0.2 },
-                          { label: "Fundo Protegido (10%)", val: numVal * 0.1 },
-                          { label: "Família (30%)", val: numVal * 0.3 },
-                          { label: "Poupança (20%)", val: numVal * 0.2 },
-                        ].map((item, i) => (
-                          <div
-                            key={i}
-                            className="rounded-xl bg-white p-2 border border-emerald-100/60 shadow-2xs"
-                          >
-                            <p className="text-[10px] text-kumbu-500 truncate">
-                              {item.label}
-                            </p>
-                            <p className="text-xs font-bold text-emerald-800 tabular-nums">
-                              {formatCurrency(item.val)}
-                            </p>
-                          </div>
-                        ))}
+                        {allocationRules.map((rule, i) => {
+                          const val = Math.round((numVal * rule.percentage) / 100);
+                          return (
+                            <div
+                              key={rule.id ?? i}
+                              className="rounded-xl bg-white p-2 border border-emerald-100/60 shadow-2xs"
+                            >
+                              <p className="text-[10px] text-kumbu-500 truncate flex items-center gap-1">
+                                <span>{rule.icon || "💰"}</span>
+                                <span className="truncate">{rule.name}</span>
+                                <span className="font-semibold text-emerald-700 shrink-0">
+                                  ({rule.percentage}%)
+                                </span>
+                              </p>
+                              <p className="text-xs font-bold text-emerald-800 tabular-nums">
+                                {formatCurrency(val)}
+                              </p>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
