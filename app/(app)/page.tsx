@@ -5,7 +5,11 @@ import {
   getTodaySummary,
   getCurrentMonthSummary,
   getNetWorth,
+  getCategoryExpenseBreakdown,
 } from "@/lib/services/reports";
+import { getGoalProgress } from "@/lib/services/goals";
+import { getDebtSummaries } from "@/lib/services/debts";
+import { getProjectSummaries } from "@/lib/services/projects";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
 
 export default async function HomePage() {
@@ -21,6 +25,10 @@ export default async function HomePage() {
     monthSummary,
     accounts,
     recentDiary,
+    goalProgress,
+    debtSummaries,
+    projectSummaries,
+    categoryExpenses,
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -31,7 +39,11 @@ export default async function HomePage() {
     getTodaySummary(supabase),
     getCurrentMonthSummary(supabase),
     getAccounts(supabase),
-    getFinancialDiary(supabase, { limit: 10 }),
+    getFinancialDiary(supabase, { limit: 8 }),
+    getGoalProgress(supabase),
+    getDebtSummaries(supabase),
+    getProjectSummaries(supabase),
+    getCategoryExpenseBreakdown(supabase),
   ]);
 
   const displayName =
@@ -40,7 +52,6 @@ export default async function HomePage() {
     "Utilizador";
   const currency = profile?.preferred_currency ?? "AOA";
 
-  // Calculate total balance from net_worth view or sum of accounts
   const totalBalance =
     netWorth?.net_worth ??
     accounts.reduce((sum, a) => sum + (a.current_balance ?? 0), 0);
@@ -54,6 +65,10 @@ export default async function HomePage() {
       monthSummary={monthSummary}
       accounts={accounts}
       recentDiary={recentDiary}
+      goalProgress={goalProgress}
+      debtSummaries={debtSummaries}
+      projectSummaries={projectSummaries}
+      categoryExpenses={categoryExpenses}
     />
   );
 }

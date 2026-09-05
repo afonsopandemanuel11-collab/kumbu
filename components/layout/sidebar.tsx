@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { mainNavItems } from "@/lib/navigation";
+import { navPrincipal, navGestao, navAnalise } from "@/lib/navigation";
 import { cn } from "@/lib/utils/cn";
 import { Icon, type IconName } from "@/components/ui/icons";
 import { useQuickAction } from "@/lib/context/quick-action-context";
@@ -11,7 +11,6 @@ import { useQuickAction } from "@/lib/context/quick-action-context";
 export function Sidebar() {
   const pathname = usePathname();
   const { openQuickRegister } = useQuickAction();
-  const items = mainNavItems.filter((item) => item.desktop !== false);
 
   return (
     <aside className="hidden w-[220px] shrink-0 border-r border-kumbu-100 bg-white lg:flex lg:flex-col">
@@ -49,7 +48,7 @@ export function Sidebar() {
         <p className="px-3 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-widest text-kumbu-400">
           Principal
         </p>
-        {items.slice(0, 2).map((item) => {
+        {navPrincipal.map((item) => {
           const active =
             item.href === "/"
               ? pathname === "/"
@@ -68,7 +67,7 @@ export function Sidebar() {
         <p className="px-3 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-widest text-kumbu-400">
           Gestão
         </p>
-        {items.slice(2, 5).map((item) => {
+        {navGestao.map((item) => {
           const active = pathname.startsWith(item.href);
           return (
             <NavItem
@@ -84,7 +83,7 @@ export function Sidebar() {
         <p className="px-3 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-widest text-kumbu-400">
           Análise
         </p>
-        {items.slice(5).map((item) => {
+        {navAnalise.map((item) => {
           const active = pathname.startsWith(item.href);
           return (
             <NavItem

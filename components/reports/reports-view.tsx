@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils/currency";
 import type {
   NetWorth,
@@ -46,6 +47,9 @@ export function ReportsView({
     0,
   );
 
+  const topExpense = categoryExpenses[0];
+  const topIncome = categoryIncomes[0];
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -54,7 +58,7 @@ export function ReportsView({
           Relatórios & Análise
         </h1>
         <p className="mt-0.5 text-sm text-kumbu-500">
-          Visão detalhada sobre património, distribuição de categorias e histórico de evolução.
+          Leitura estratégica do teu património, hábitos de consumo e evolução ao longo do tempo.
         </p>
       </div>
 
@@ -96,6 +100,29 @@ export function ReportsView({
           </p>
         </div>
       </div>
+
+      {/* Narrative Insights Banner */}
+      {topExpense && totalExpenseBreakdown > 0 && (
+        <div className="rounded-2xl border border-kumbu-100 bg-white p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">📊</span>
+            <div>
+              <p className="text-xs font-semibold text-kumbu-900">
+                A tua maior categoria de gasto é {topExpense.category}
+              </p>
+              <p className="text-[11px] text-kumbu-500">
+                Representa {Math.round((topExpense.total ?? 0) / totalExpenseBreakdown * 100)}% de todas as tuas despesas acumuladas ({formatCurrency(topExpense.total ?? 0)}).
+              </p>
+            </div>
+          </div>
+          {topIncome && (
+            <div className="sm:text-right shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-kumbu-50">
+              <p className="text-[11px] text-kumbu-400">Principal receita</p>
+              <p className="text-xs font-bold text-emerald-700">{topIncome.category}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Section Tabs */}
       <div className="flex gap-4 border-b border-kumbu-100">
@@ -235,7 +262,7 @@ export function ReportsView({
           <CardHeader>
             <CardTitle>Histórico de Desempenho Mensal</CardTitle>
             <CardDescription>
-              Comparativo de ganhos, gastos e resultado líquido dos últimos meses.
+              Comparativo de ganhos, gastos, poupança e resultado líquido dos últimos meses.
             </CardDescription>
           </CardHeader>
 
@@ -249,17 +276,43 @@ export function ReportsView({
                 const inc = m.income ?? 0;
                 const exp = m.expense ?? 0;
                 const net = m.net ?? inc - exp;
+                const saving = m.saving ?? 0;
+                const savingRate = inc > 0 ? Math.round((saving / inc) * 100) : 0;
+
+                // Compare with previous month in list if exists (list is desc by month)
+                const nextOlderMonth = monthlySummaries[idx + 1];
+                let expenseTrend: number | null = null;
+                if (nextOlderMonth && (nextOlderMonth.expense ?? 0) > 0) {
+                  const olderExp = nextOlderMonth.expense ?? 0;
+                  expenseTrend = Math.round(((exp - olderExp) / olderExp) * 100);
+                }
 
                 return (
                   <div
                     key={idx}
-                    className="flex flex-col gap-2 py-3.5 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div>
-                      <p className="text-sm font-bold text-kumbu-900">
-                        {m.month}
-                      </p>
-                      <p className="text-xs text-kumbu-500">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold text-kumbu-900">
+                          {m.month}
+                        </p>
+                        {expenseTrend !== null && (
+                          <Badge
+                            variant={expenseTrend <= 0 ? "success" : "warning"}
+                            size="sm"
+                          >
+                            {expenseTrend <= 0 ? "Despesas " : "Despesas +"}
+                            {expenseTrend}%
+                          </Badge>
+                        )}
+                        {savingRate > 0 && (
+                          <Badge variant="default" size="sm">
+                            Poupança {savingRate}%
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="mt-1 text-xs text-kumbu-500">
                         Ganhos:{" "}
                         <span className="text-emerald-700 font-semibold tabular-nums">
                           +{formatCurrency(inc)}
@@ -268,6 +321,14 @@ export function ReportsView({
                         <span className="text-rose-700 font-semibold tabular-nums">
                           -{formatCurrency(exp)}
                         </span>
+                        {saving > 0 && (
+                          <span>
+                            {" "}· Poupança:{" "}
+                            <span className="text-kumbu-700 font-semibold tabular-nums">
+                              {formatCurrency(saving)}
+                            </span>
+                          </span>
+                        )}
                       </p>
                     </div>
                     <div className="sm:text-right">

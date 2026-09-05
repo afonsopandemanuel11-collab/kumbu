@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Icon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils/cn";
@@ -11,9 +12,11 @@ import { formatCurrency } from "@/lib/utils/currency";
 import { formatRelativeDate } from "@/lib/utils/date";
 import { useQuickAction } from "@/lib/context/quick-action-context";
 import type { FinancialDiaryEntry } from "@/lib/services/transactions";
+import type { Account } from "@/lib/services/accounts";
 
 type DiaryViewProps = {
   initialEntries: FinancialDiaryEntry[];
+  accounts?: Account[];
 };
 
 type FilterType = "ALL" | "INCOME" | "EXPENSE" | "TRANSFER" | "OTHER";
@@ -59,40 +62,62 @@ function getEntryDetails(entry: FinancialDiaryEntry) {
   return { dotColor, amountColor, sign, title, subtitle };
 }
 
-export function DiaryView({ initialEntries }: DiaryViewProps) {
+export function DiaryView({ initialEntries, accounts = [] }: DiaryViewProps) {
   const { openQuickRegister } = useQuickAction();
   const [filter, setFilter] = useState<FilterType>("ALL");
+  const [selectedAccountId, setSelectedAccountId] = useState<string>("ALL");
   const [searchTerm, setSearchTerm] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
-  const filteredEntries = initialEntries.filter((entry) => {
-    if (filter === "INCOME") {
-      if (entry.type !== "INCOME" && entry.type !== "PROJECT_INCOME") return false;
-    } else if (filter === "EXPENSE") {
-      if (entry.type !== "EXPENSE" && entry.type !== "PROJECT_EXPENSE") return false;
-    } else if (filter === "TRANSFER") {
-      if (entry.type !== "TRANSFER") return false;
-    } else if (filter === "OTHER") {
-      if (
-        entry.type === "INCOME" ||
-        entry.type === "EXPENSE" ||
-        entry.type === "TRANSFER"
-      )
-        return false;
-    }
+  const filteredEntries = useMemo(() => {
+    return initialEntries.filter((entry) => {
+      // Type filter
+      if (filter === "INCOME") {
+        if (entry.type !== "INCOME" && entry.type !== "PROJECT_INCOME") return false;
+      } else if (filter === "EXPENSE") {
+        if (entry.type !== "EXPENSE" && entry.type !== "PROJECT_EXPENSE") return false;
+      } else if (filter === "TRANSFER") {
+        if (entry.type !== "TRANSFER") return false;
+      } else if (filter === "OTHER") {
+        if (
+          entry.type === "INCOME" ||
+          entry.type === "EXPENSE" ||
+          entry.type === "TRANSFER"
+        )
+          return false;
+      }
 
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      return [
-        entry.description,
-        entry.category_name,
-        entry.account_name,
-        entry.destination_account_name,
-        entry.project_name,
-      ].some((s) => s?.toLowerCase().includes(term));
-    }
+      // Account filter
+      if (selectedAccountId !== "ALL") {
+        const matchAccount =
+          entry.account_name === selectedAccountId ||
+          entry.destination_account_name === selectedAccountId;
+        if (!matchAccount) return false;
+      }
 
-    return true;
-  });
+      // Date range filter
+      if (entry.transaction_date) {
+        const entryDate = entry.transaction_date.split("T")[0];
+        if (startDate && entryDate < startDate) return false;
+        if (endDate && entryDate > endDate) return false;
+      }
+
+      // Search term
+      if (searchTerm.trim()) {
+        const term = searchTerm.toLowerCase();
+        return [
+          entry.description,
+          entry.category_name,
+          entry.account_name,
+          entry.destination_account_name,
+          entry.project_name,
+        ].some((s) => s?.toLowerCase().includes(term));
+      }
+
+      return true;
+    });
+  }, [initialEntries, filter, selectedAccountId, startDate, endDate, searchTerm]);
 
   // Group by date
   const groupedByDate: Record<string, FinancialDiaryEntry[]> = {};
@@ -116,6 +141,21 @@ export function DiaryView({ initialEntries }: DiaryViewProps) {
     { id: "OTHER", label: "Outros" },
   ];
 
+  const hasActiveFilters =
+    filter !== "ALL" ||
+    selectedAccountId !== "ALL" ||
+    Boolean(searchTerm.trim()) ||
+    Boolean(startDate) ||
+    Boolean(endDate);
+
+  function resetFilters() {
+    setFilter("ALL");
+    setSelectedAccountId("ALL");
+    setSearchTerm("");
+    setStartDate("");
+    setEndDate("");
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -125,7 +165,7 @@ export function DiaryView({ initialEntries }: DiaryViewProps) {
             Diário Financeiro
           </h1>
           <p className="mt-0.5 text-sm text-kumbu-500">
-            Histórico completo de todos os teus movimentos financeiros.
+            Histórico cronológico de todos os teus movimentos financeiros.
           </p>
         </div>
         <Button
@@ -138,33 +178,84 @@ export function DiaryView({ initialEntries }: DiaryViewProps) {
         </Button>
       </div>
 
-      {/* Filters + Search */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
-          {filters.map((t) => (
+      {/* Filters Bar */}
+      <div className="space-y-3 rounded-2xl border border-kumbu-100 bg-white p-4">
+        {/* Type pills */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
+            {filters.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setFilter(t.id)}
+                className={cn(
+                  "shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all",
+                  filter === t.id
+                    ? "bg-kumbu-900 text-white shadow-sm"
+                    : "bg-kumbu-50 text-kumbu-600 hover:bg-kumbu-100 hover:text-kumbu-900",
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {hasActiveFilters && (
             <button
-              key={t.id}
               type="button"
-              onClick={() => setFilter(t.id)}
-              className={cn(
-                "shrink-0 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all",
-                filter === t.id
-                  ? "bg-kumbu-900 text-white shadow-sm"
-                  : "bg-white border border-kumbu-100 text-kumbu-600 hover:border-kumbu-200 hover:text-kumbu-900",
-              )}
+              onClick={resetFilters}
+              className="text-xs text-kumbu-500 hover:text-kumbu-800 underline transition-colors"
             >
-              {t.label}
+              Limpar filtros
             </button>
-          ))}
+          )}
         </div>
 
-        <div className="w-full sm:w-56">
-          <Input
-            placeholder="Pesquisar..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-9 text-xs"
-          />
+        {/* Detailed Controls: Account, Dates, Search */}
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-4">
+          <div className="sm:col-span-2">
+            <Input
+              placeholder="Pesquisar descrição, categoria, projecto..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-9 text-xs"
+            />
+          </div>
+
+          {accounts.length > 0 && (
+            <div>
+              <Select
+                value={selectedAccountId}
+                onChange={(e) => setSelectedAccountId(e.target.value)}
+                className="h-9 text-xs"
+              >
+                <option value="ALL">Todas as Carteiras</option>
+                {accounts.map((acc) => (
+                  <option key={acc.id} value={acc.name}>
+                    {acc.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          )}
+
+          <div className="flex items-center gap-1.5">
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="h-9 text-[11px]"
+              title="Data inicial"
+            />
+            <span className="text-kumbu-400 text-xs">-</span>
+            <Input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="h-9 text-[11px]"
+              title="Data final"
+            />
+          </div>
         </div>
       </div>
 
@@ -178,10 +269,16 @@ export function DiaryView({ initialEntries }: DiaryViewProps) {
           onAction={() => openQuickRegister("EXPENSE")}
         />
       ) : sortedDates.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-kumbu-200 p-10 text-center">
-          <p className="text-sm text-kumbu-400">
-            Nenhum resultado para os filtros seleccionados.
+        <div className="rounded-2xl border border-dashed border-kumbu-200 p-10 text-center space-y-2">
+          <p className="text-sm font-semibold text-kumbu-700">
+            Nenhum movimento encontrado para os filtros activos.
           </p>
+          <p className="text-xs text-kumbu-400">
+            Tenta ajustar ou limpar os filtros de pesquisa.
+          </p>
+          <Button size="sm" variant="secondary" onClick={resetFilters}>
+            Limpar filtros
+          </Button>
         </div>
       ) : (
         <div className="space-y-8">

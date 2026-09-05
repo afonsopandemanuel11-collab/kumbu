@@ -78,11 +78,11 @@ export async function updateBudget(
 export async function getRecurringTransactions(supabase: SupabaseClient<Database>) {
   const { data, error } = await supabase
     .from("recurring_transactions")
-    .select("*, categories(name, icon), accounts(name)")
+    .select("*, categories(name, icon), accounts:accounts!recurring_transactions_account_id_fkey(name)")
     .order("next_occurrence", { ascending: true });
 
   if (error) throw error;
-  return data ?? [];
+  return (data as any) ?? [];
 }
 
 export async function getCashFlowProjections(supabase: SupabaseClient<Database>) {
