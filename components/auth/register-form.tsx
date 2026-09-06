@@ -9,6 +9,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signUpAction } from "@/app/actions/auth";
+import { createClient } from "@/lib/supabase/client";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -38,6 +39,47 @@ export function RegisterForm() {
       });
 
       if (res.error) {
+        // If it was already registered or validation error, show directly
+        if (
+          res.error.includes("já se encontra registado") ||
+          res.error.includes("pelo menos 6")
+        ) {
+          setError(res.error);
+          setLoading(false);
+          return;
+        }
+
+        // If server action had connection failure, attempt direct browser client sign up
+        try {
+          const supabase = createClient();
+          const redirectUrl = origin ? `${origin}/auth/callback` : undefined;
+          const { data: bData, error: bError } = await supabase.auth.signUp({
+            email: email.trim(),
+            password,
+            options: {
+              emailRedirectTo: redirectUrl,
+              data: {
+                full_name: fullName.trim(),
+              },
+            },
+          });
+
+          if (!bError) {
+            if (bData?.session) {
+              router.push("/");
+              router.refresh();
+              return;
+            }
+            setSuccess(
+              "Conta criada com sucesso! Se a confirmação por email estiver activa, verifica a tua caixa de entrada para confirmar o registo antes de entrar."
+            );
+            setLoading(false);
+            return;
+          }
+        } catch {
+          // Fall through to show server diagnostic error
+        }
+
         setError(res.error);
         setLoading(false);
         return;

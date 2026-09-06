@@ -9,6 +9,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signInAction } from "@/app/actions/auth";
+import { createClient } from "@/lib/supabase/client";
 
 export function LoginForm() {
   const router = useRouter();
@@ -32,6 +33,34 @@ export function LoginForm() {
       });
 
       if (res.error) {
+        // If it was wrong credentials or unconfirmed email, show error directly
+        if (
+          res.error.includes("incorrectos") ||
+          res.error.includes("não foi confirmado")
+        ) {
+          setError(res.error);
+          setLoading(false);
+          return;
+        }
+
+        // If server action had connection failure, attempt direct browser client login
+        try {
+          const supabase = createClient();
+          const { error: browserAuthError } =
+            await supabase.auth.signInWithPassword({
+              email: email.trim(),
+              password,
+            });
+
+          if (!browserAuthError) {
+            router.push(redirectTo);
+            router.refresh();
+            return;
+          }
+        } catch {
+          // Fall through to show server diagnostic error
+        }
+
         setError(res.error);
         setLoading(false);
         return;

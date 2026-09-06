@@ -1,12 +1,32 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getSupabaseEnv } from "@/lib/supabase/env";
 
 export type AuthResult = {
   success?: boolean;
   hasSession?: boolean;
   error?: string;
 };
+
+function getFetchErrorDiagnostic(errOrError: unknown): string {
+  const { url, anonKey } = getSupabaseEnv();
+  let host = "não definida";
+  try {
+    host = url ? new URL(url).hostname : "não definida";
+  } catch {
+    host = url ? `inválida (${url.slice(0, 20)}...)` : "não definida";
+  }
+
+  const cause =
+    (errOrError as { cause?: { code?: string; message?: string } })?.cause?.code ||
+    (errOrError as { cause?: { code?: string; message?: string } })?.cause?.message ||
+    (errOrError as { status?: number })?.status ||
+    "";
+
+  const hasKey = !!anonKey && anonKey.length > 5;
+  return `Falha de ligação ao Supabase [Host: ${host} | Chave: ${hasKey ? "OK" : "Ausente"} | Causa: ${cause || "fetch failed"}]. Verifica as variáveis de ambiente na Vercel.`;
+}
 
 export async function signUpAction(params: {
   email: string;
@@ -39,8 +59,7 @@ export async function signUpAction(params: {
         (error as { status?: number }).status === 0 ||
         error.name === "AuthRetryableFetchError"
       ) {
-        msg =
-          "Não foi possível estabelecer ligação com o servidor de autenticação. Verifica a ligação ou as variáveis de ambiente do Supabase na Vercel.";
+        msg = getFetchErrorDiagnostic(error);
       } else if (
         msg.includes("User already registered") ||
         msg.includes("already registered")
@@ -82,7 +101,7 @@ export async function signUpAction(params: {
     const errMessage = err instanceof Error ? err.message : "";
     return {
       error: errMessage.includes("fetch failed")
-        ? "Não foi possível estabelecer ligação com o servidor de autenticação. Verifica a ligação ou as variáveis de ambiente do Supabase na Vercel."
+        ? getFetchErrorDiagnostic(err)
         : errMessage || "Erro de comunicação com o servidor. Tenta novamente.",
     };
   }
@@ -108,8 +127,7 @@ export async function signInAction(params: {
         (error as { status?: number }).status === 0 ||
         error.name === "AuthRetryableFetchError"
       ) {
-        msg =
-          "Não foi possível estabelecer ligação com o servidor de autenticação. Verifica a ligação ou as variáveis de ambiente do Supabase na Vercel.";
+        msg = getFetchErrorDiagnostic(error);
       } else if (
         msg.includes("Invalid login credentials") ||
         msg.includes("invalid_grant")
@@ -131,7 +149,7 @@ export async function signInAction(params: {
     const errMessage = err instanceof Error ? err.message : "";
     return {
       error: errMessage.includes("fetch failed")
-        ? "Não foi possível estabelecer ligação com o servidor de autenticação. Verifica a ligação ou as variáveis de ambiente do Supabase na Vercel."
+        ? getFetchErrorDiagnostic(err)
         : errMessage || "Erro de comunicação com o servidor. Tenta novamente.",
     };
   }
