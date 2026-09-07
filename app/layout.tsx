@@ -27,7 +27,6 @@ export const metadata: Metadata = {
     template: "%s | KUMBU",
   },
   description: "O teu dinheiro. O teu controlo.",
-  manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

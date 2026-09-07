@@ -3,11 +3,29 @@ import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
 const authRoutes = ["/login", "/registo", "/recuperar-palavra-passe"];
-const publicRoutes = [...authRoutes, "/auth/callback"];
+const publicRoutes = [
+  ...authRoutes,
+  "/auth/callback",
+  "/offline",
+  "/manifest.webmanifest",
+  "/sw.js",
+];
 
 export async function middleware(request: NextRequest) {
-  const { supabaseResponse, user } = await updateSession(request);
   const { pathname } = request.nextUrl;
+
+  // Immediately bypass static PWA assets, manifest and service worker
+  if (
+    pathname === "/manifest.webmanifest" ||
+    pathname === "/sw.js" ||
+    pathname === "/offline" ||
+    pathname.startsWith("/icons/") ||
+    pathname === "/favicon.svg"
+  ) {
+    return NextResponse.next();
+  }
+
+  const { supabaseResponse, user } = await updateSession(request);
 
   const isPublicRoute = publicRoutes.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`),
@@ -31,6 +49,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|webmanifest)$).*)",
   ],
 };
