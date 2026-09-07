@@ -169,7 +169,7 @@ export function BudgetsView({
 
                       {/* Progress & Numbers */}
                       <div className="mt-4 space-y-2">
-                        <div className="flex items-baseline justify-between">
+                        <div className="flex flex-wrap items-baseline justify-between gap-1">
                           <p className="text-base font-extrabold text-kumbu-900 tabular-nums">
                             {formatCurrency(actual)}
                             <span className="text-xs font-normal text-kumbu-400 ml-1">

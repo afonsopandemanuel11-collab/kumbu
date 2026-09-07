@@ -64,33 +64,43 @@ export function Modal({
       <div
         ref={dialogRef}
         className={cn(
-          "relative z-10 w-full bg-white shadow-xl",
+          "relative z-10 w-full bg-white shadow-2xl",
           "rounded-t-3xl sm:rounded-2xl",
-          "max-h-[92dvh] overflow-y-auto",
+          "max-h-[88dvh] sm:max-h-[85vh] overflow-y-auto overscroll-contain",
           maxWClass,
         )}
       >
         {/* Drag handle (mobile) */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden">
-          <div className="h-1 w-10 rounded-full bg-kumbu-200" />
+          <div className="h-1.5 w-12 rounded-full bg-kumbu-200" />
         </div>
 
-        <div className="px-5 pb-6 pt-4 sm:p-6">
-          {(title || description) && (
-            <div className="mb-5">
+        <div className="px-5 pt-3 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] sm:p-6">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
               {title && (
                 <h2
                   id="modal-title"
-                  className="text-base font-semibold text-kumbu-900"
+                  className="text-base font-bold text-kumbu-900"
                 >
                   {title}
                 </h2>
               )}
               {description && (
-                <p className="mt-1 text-sm text-kumbu-500">{description}</p>
+                <p className="mt-0.5 text-xs text-kumbu-500">{description}</p>
               )}
             </div>
-          )}
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Fechar modal"
+              className="rounded-xl p-1.5 text-kumbu-400 hover:bg-kumbu-50 hover:text-kumbu-700 transition-colors shrink-0"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
           {children}
         </div>
       </div>

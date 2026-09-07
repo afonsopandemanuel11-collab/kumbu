@@ -239,20 +239,19 @@ export function DiaryView({ initialEntries, accounts = [] }: DiaryViewProps) {
             </div>
           )}
 
-          <div className="flex items-center gap-1.5">
+          <div className="grid grid-cols-2 gap-1.5 min-w-0">
             <Input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="h-9 text-[11px]"
+              className="h-9 text-[11px] min-w-0 w-full px-2"
               title="Data inicial"
             />
-            <span className="text-kumbu-400 text-xs">-</span>
             <Input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="h-9 text-[11px]"
+              className="h-9 text-[11px] min-w-0 w-full px-2"
               title="Data final"
             />
           </div>

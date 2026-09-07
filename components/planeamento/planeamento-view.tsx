@@ -199,7 +199,7 @@ export function PlaneamentoView({
             Diferencia gastos fixos de variáveis, monitoriza compromissos e planeia os teus próximos meses.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link href="/orcamentos">
             <Button size="sm" variant="secondary" className="gap-1.5 text-xs">
               <Icon name="chart" className="w-3.5 h-3.5" />
@@ -363,7 +363,7 @@ export function PlaneamentoView({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+            <div className="grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
               {(() => {
                 const baseVal = parseFloat(simulatedIncome) || 0;
                 return allocationRules.map((rule, idx) => {

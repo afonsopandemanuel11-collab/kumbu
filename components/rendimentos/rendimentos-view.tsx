@@ -343,7 +343,7 @@ export function RendimentosView({
           {/* Fonte A */}
           <div className="rounded-2xl border border-kumbu-100 bg-kumbu-50/40 p-4 space-y-3">
             <div className="space-y-1">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-1.5">
                 <Label className="text-xs">Actividade / Fonte A</Label>
                 {sources.length > 0 && (
                   <select
@@ -351,7 +351,7 @@ export function RendimentosView({
                       const found = sources.find((s) => s.id === e.target.value);
                       if (found) applySourceToA(found);
                     }}
-                    className="text-[10px] rounded bg-white border border-kumbu-200 text-kumbu-600 px-1.5 py-0.5"
+                    className="text-[10px] rounded bg-white border border-kumbu-200 text-kumbu-600 px-1.5 py-0.5 max-w-[160px] truncate"
                     defaultValue=""
                   >
                     <option value="" disabled>Carregar fonte guardada...</option>
@@ -401,7 +401,7 @@ export function RendimentosView({
           {/* Fonte B */}
           <div className="rounded-2xl border border-kumbu-100 bg-kumbu-50/40 p-4 space-y-3">
             <div className="space-y-1">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-1.5">
                 <Label className="text-xs">Actividade / Fonte B</Label>
                 {sources.length > 0 && (
                   <select
@@ -409,7 +409,7 @@ export function RendimentosView({
                       const found = sources.find((s) => s.id === e.target.value);
                       if (found) applySourceToB(found);
                     }}
-                    className="text-[10px] rounded bg-white border border-kumbu-200 text-kumbu-600 px-1.5 py-0.5"
+                    className="text-[10px] rounded bg-white border border-kumbu-200 text-kumbu-600 px-1.5 py-0.5 max-w-[160px] truncate"
                     defaultValue=""
                   >
                     <option value="" disabled>Carregar fonte guardada...</option>

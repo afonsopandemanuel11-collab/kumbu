@@ -125,36 +125,36 @@ export function DashboardView({
 
   return (
     <div className="space-y-6">
-      {/* Page greeting */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-kumbu-900">
+      {/* Page greeting & quick register */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-kumbu-900 truncate">
             Olá, {firstName} 👋
           </h1>
-          <p className="mt-0.5 text-sm text-kumbu-500">
+          <p className="mt-0.5 text-xs sm:text-sm text-kumbu-500 truncate">
             Como estão as tuas finanças hoje?
           </p>
         </div>
         <Button
           size="sm"
           onClick={() => openQuickRegister("EXPENSE")}
-          className="shrink-0 hidden sm:flex gap-1.5"
+          className="shrink-0 flex gap-1.5 rounded-xl shadow-xs"
         >
           <Icon name="plus" className="w-4 h-4" />
-          Registar
+          <span className="font-semibold">Registar</span>
         </Button>
       </div>
 
       {/* Hero balance card */}
-      <div className="relative overflow-hidden rounded-3xl bg-kumbu-800 p-6 text-white shadow-lg">
+      <div className="relative overflow-hidden rounded-3xl bg-kumbu-800 p-5 sm:p-6 text-white shadow-lg">
         <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-kumbu-700/50" />
         <div className="pointer-events-none absolute -bottom-12 -left-6 h-36 w-36 rounded-full bg-kumbu-900/40" />
 
         <div className="relative">
-          <p className="text-xs font-semibold uppercase tracking-widest text-kumbu-300">
+          <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-widest text-kumbu-300">
             Saldo total
           </p>
-          <p className="mt-2 text-4xl font-extrabold tracking-tight sm:text-5xl">
+          <p className="mt-2 text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight tabular-nums truncate">
             {formatCurrency(totalBalance, currency)}
           </p>
           <p className="mt-1 text-xs text-kumbu-400">
@@ -166,7 +166,7 @@ export function DashboardView({
           </p>
 
           {/* Quick actions row */}
-          <div className="mt-5 flex gap-2 overflow-x-auto scrollbar-none pb-0.5">
+          <div className="mt-5 flex gap-2 overflow-x-auto scrollbar-none pb-1 pt-0.5 -mx-1 px-1">
             {[
               { label: "Ganhei", action: "INCOME" as const, color: "bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200" },
               { label: "Gastei", action: "EXPENSE" as const, color: "bg-rose-500/20 hover:bg-rose-500/30 text-rose-200" },
@@ -178,7 +178,7 @@ export function DashboardView({
                 key={action}
                 type="button"
                 onClick={() => openQuickRegister(action)}
-                className={`shrink-0 rounded-xl px-3.5 py-2 text-xs font-semibold transition-colors ${color}`}
+                className={`shrink-0 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all active:scale-95 ${color}`}
               >
                 {label}
               </button>
@@ -277,7 +277,7 @@ export function DashboardView({
                 </Link>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              <div className="grid grid-cols-1 min-[420px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 {activeAccounts.slice(0, 4).map((acc) => (
                   <div
                     key={acc.id}
@@ -522,22 +522,22 @@ function SummaryCard({
         <p className="text-sm font-semibold text-kumbu-900">{title}</p>
         <p className="text-[11px] text-kumbu-400">{subtitle}</p>
       </div>
-      <div className="grid grid-cols-3 gap-2">
-        <div className="rounded-xl bg-emerald-50 p-3">
-          <p className="text-[10px] font-medium text-emerald-700 uppercase tracking-wide">Ganhos</p>
-          <p className="mt-1.5 text-xs font-bold text-emerald-800 tabular-nums">
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+        <div className="rounded-xl bg-emerald-50 p-2 sm:p-3 min-w-0">
+          <p className="text-[9px] sm:text-[10px] font-medium text-emerald-700 uppercase tracking-wide truncate">Ganhos</p>
+          <p className="mt-1 text-[11px] sm:text-xs font-bold text-emerald-800 tabular-nums truncate">
             +{formatCurrency(income, currency)}
           </p>
         </div>
-        <div className="rounded-xl bg-rose-50 p-3">
-          <p className="text-[10px] font-medium text-rose-700 uppercase tracking-wide">Gastos</p>
-          <p className="mt-1.5 text-xs font-bold text-rose-800 tabular-nums">
+        <div className="rounded-xl bg-rose-50 p-2 sm:p-3 min-w-0">
+          <p className="text-[9px] sm:text-[10px] font-medium text-rose-700 uppercase tracking-wide truncate">Gastos</p>
+          <p className="mt-1 text-[11px] sm:text-xs font-bold text-rose-800 tabular-nums truncate">
             -{formatCurrency(expense, currency)}
           </p>
         </div>
-        <div className="rounded-xl bg-kumbu-50 p-3">
-          <p className="text-[10px] font-medium text-kumbu-700 uppercase tracking-wide">Resultado</p>
-          <p className={`mt-1.5 text-xs font-bold tabular-nums ${net >= 0 ? "text-kumbu-900" : "text-rose-700"}`}>
+        <div className="rounded-xl bg-kumbu-50 p-2 sm:p-3 min-w-0">
+          <p className="text-[9px] sm:text-[10px] font-medium text-kumbu-700 uppercase tracking-wide truncate">Resultado</p>
+          <p className={`mt-1 text-[11px] sm:text-xs font-bold tabular-nums truncate ${net >= 0 ? "text-kumbu-900" : "text-rose-700"}`}>
             {net >= 0 ? "+" : ""}{formatCurrency(net, currency)}
           </p>
         </div>
