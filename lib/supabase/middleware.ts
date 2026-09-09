@@ -25,9 +25,26 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+    user = authUser;
+  } catch (err: unknown) {
+    console.warn("[Middleware] Validação remota de sessão indisponível (offline):", err);
+  }
+
+  // Fallback offline: se a verificação remota falhou mas o utilizador tem cookie de sessão Supabase
+  if (!user) {
+    const hasAuthCookie = request.cookies
+      .getAll()
+      .some((c) => c.name.includes("-auth-token") && c.value.length > 10);
+
+    if (hasAuthCookie) {
+      user = { id: "offline_session_user" } as any;
+    }
+  }
 
   return { supabaseResponse, user };
 }

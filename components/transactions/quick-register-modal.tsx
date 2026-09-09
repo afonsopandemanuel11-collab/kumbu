@@ -27,6 +27,24 @@ import type { Debt } from "@/lib/services/debts";
 import type { Project } from "@/lib/services/projects";
 import type { BudgetVsActual } from "@/lib/services/budgets";
 import { getAllocationRules, type AllocationRule } from "@/lib/services/allocation-rules";
+import {
+  enqueueOperation,
+  saveOfflineTransaction,
+  cacheWallets,
+  getCachedWallets,
+  cacheCategories,
+  getCachedCategories,
+  cacheGoals,
+  getCachedGoals,
+  cacheDebts,
+  getCachedDebts,
+  cacheProjects,
+  getCachedProjects,
+  adjustCachedWalletBalance,
+  getIsOnline,
+  checkRealConnectivity,
+  triggerSync,
+} from "@/lib/offline";
 
 type ActionType =
   | "INCOME"
@@ -147,6 +165,17 @@ function QuickRegisterFormInner({
         const accs = (accRes.data as Account[]) ?? [];
         setAccounts(accs);
         if (accs.length > 0) {
+          cacheWallets(
+            accs.map((a) => ({
+              id: a.id,
+              name: a.name,
+              type: a.type,
+              current_balance: a.current_balance,
+              currency: a.currency,
+              is_active: a.is_active,
+              updated_at: a.updated_at,
+            }))
+          ).catch(() => {});
           setSelectedAccountId(accs[0].id);
           if (accs.length > 1) {
             setSelectedDestinationAccountId(accs[1].id);
@@ -155,26 +184,94 @@ function QuickRegisterFormInner({
 
         const cats = (catRes.data as Category[]) ?? [];
         setCategories(cats);
+        if (cats.length > 0) {
+          cacheCategories(
+            cats.map((c) => ({
+              id: c.id,
+              name: c.name,
+              kind: c.kind,
+              icon: c.icon,
+              is_active: c.is_active,
+            }))
+          ).catch(() => {});
+        }
 
         const activeGoals = (goalRes.data as Goal[]) ?? [];
         setGoals(activeGoals);
         if (activeGoals.length > 0) {
+          cacheGoals(
+            activeGoals.map((g) => ({
+              id: g.id,
+              name: g.name,
+              target_amount: g.target_amount,
+              current_amount: g.current_amount,
+              deadline: g.deadline,
+              status: g.status,
+            }))
+          ).catch(() => {});
           setSelectedGoalId(activeGoals[0].id);
         }
 
         const activeDebts = (debtRes.data as Debt[]) ?? [];
         setDebts(activeDebts);
         if (activeDebts.length > 0) {
+          cacheDebts(
+            activeDebts.map((d) => ({
+              id: d.id,
+              person_name: d.person_name,
+              type: d.type,
+              original_amount: d.original_amount,
+              remaining_amount: d.remaining_amount,
+              status: d.status,
+            }))
+          ).catch(() => {});
           setSelectedDebtId(activeDebts[0].id);
         }
 
         const activeProjects = (projRes.data as Project[]) ?? [];
         setProjects(activeProjects);
         if (activeProjects.length > 0) {
+          cacheProjects(
+            activeProjects.map((p) => ({
+              id: p.id,
+              name: p.name,
+              status: p.status,
+            }))
+          ).catch(() => {});
           setSelectedProjectId(activeProjects[0].id);
         }
       } catch (err: unknown) {
-        console.error(err);
+        console.warn("[QuickRegister] Carregamento online falhou, a carregar do cache IndexedDB:", err);
+        try {
+          const [cachedAccs, cachedCats, cachedGoals, cachedDebts, cachedProjs] = await Promise.all([
+            getCachedWallets(),
+            getCachedCategories(),
+            getCachedGoals(),
+            getCachedDebts(),
+            getCachedProjects(),
+          ]);
+
+          if (cachedAccs.length > 0) {
+            setAccounts(cachedAccs as Account[]);
+            setSelectedAccountId(cachedAccs[0].id);
+            if (cachedAccs.length > 1) setSelectedDestinationAccountId(cachedAccs[1].id);
+          }
+          if (cachedCats.length > 0) setCategories(cachedCats as Category[]);
+          if (cachedGoals.length > 0) {
+            setGoals(cachedGoals as Goal[]);
+            setSelectedGoalId(cachedGoals[0].id);
+          }
+          if (cachedDebts.length > 0) {
+            setDebts(cachedDebts as Debt[]);
+            setSelectedDebtId(cachedDebts[0].id);
+          }
+          if (cachedProjs.length > 0) {
+            setProjects(cachedProjs as Project[]);
+            setSelectedProjectId(cachedProjs[0].id);
+          }
+        } catch (cacheErr) {
+          console.error("[QuickRegister] Erro ao carregar cache local:", cacheErr);
+        }
       } finally {
         setLoadingData(false);
       }
@@ -218,103 +315,320 @@ function QuickRegisterFormInner({
     }
 
     setLoading(true);
-    const supabase = createClient();
     const safeDate = sanitizeDate(date);
 
-    try {
+    // Função interna para registo local quando offline
+    const handleOfflineSubmit = async () => {
+      const clientOpId =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `op_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      const nowIso = new Date().toISOString();
+
       if (action === "INCOME") {
         if (!effectiveAccountId || !effectiveCategoryId)
           throw new Error("Selecciona a carteira e a categoria.");
-        await createIncome(supabase, {
-          accountId: effectiveAccountId,
+        await enqueueOperation(
+          "CREATE_INCOME",
+          {
+            accountId: effectiveAccountId,
+            amount: numAmount,
+            categoryId: effectiveCategoryId,
+            date: safeDate,
+            description: description.trim() || undefined,
+          },
+          clientOpId
+        );
+
+        await saveOfflineTransaction({
+          id: clientOpId,
+          client_operation_id: clientOpId,
+          account_id: effectiveAccountId,
           amount: numAmount,
-          categoryId: effectiveCategoryId,
-          date: safeDate,
-          description: description.trim() || undefined,
+          type: "INCOME",
+          category_id: effectiveCategoryId,
+          currency: "AOA",
+          description: description.trim() || null,
+          transaction_date: safeDate || nowIso,
+          created_at: nowIso,
+          sync_status: "PENDING",
         });
-        setSuccessMessage(`Ganho de ${numAmount} Kz registado com sucesso!`);
+
+        await adjustCachedWalletBalance(effectiveAccountId, numAmount);
+        setSuccessMessage(`Ganho de ${numAmount} Kz registado offline! Sincronizará assim que houver ligação.`);
       } else if (action === "EXPENSE") {
         if (!effectiveAccountId || !effectiveCategoryId)
           throw new Error("Selecciona a carteira e a categoria.");
-        await createExpense(supabase, {
-          accountId: effectiveAccountId,
+        await enqueueOperation(
+          "CREATE_EXPENSE",
+          {
+            accountId: effectiveAccountId,
+            amount: numAmount,
+            categoryId: effectiveCategoryId,
+            date: safeDate,
+            description: description.trim() || undefined,
+          },
+          clientOpId
+        );
+
+        await saveOfflineTransaction({
+          id: clientOpId,
+          client_operation_id: clientOpId,
+          account_id: effectiveAccountId,
           amount: numAmount,
-          categoryId: effectiveCategoryId,
-          date: safeDate,
-          description: description.trim() || undefined,
+          type: "EXPENSE",
+          category_id: effectiveCategoryId,
+          currency: "AOA",
+          description: description.trim() || null,
+          transaction_date: safeDate || nowIso,
+          created_at: nowIso,
+          sync_status: "PENDING",
         });
-        setSuccessMessage(`Gasto de ${numAmount} Kz registado com sucesso!`);
+
+        await adjustCachedWalletBalance(effectiveAccountId, -numAmount);
+        setSuccessMessage(`Gasto de ${numAmount} Kz registado offline! Sincronizará assim que houver ligação.`);
       } else if (action === "TRANSFER") {
         if (!effectiveAccountId || !effectiveDestinationAccountId)
           throw new Error("Selecciona as contas de origem e destino.");
         if (effectiveAccountId === effectiveDestinationAccountId)
           throw new Error("A conta de destino não pode ser igual à de origem.");
-        await createTransfer(supabase, {
-          accountId: effectiveAccountId,
-          destinationAccountId: effectiveDestinationAccountId,
-          amount: numAmount,
-          date: safeDate,
-          description: description.trim() || undefined,
-        });
-        setSuccessMessage(
-          `Transferência de ${numAmount} Kz realizada com sucesso!`,
+
+        await enqueueOperation(
+          "CREATE_TRANSFER",
+          {
+            accountId: effectiveAccountId,
+            destinationAccountId: effectiveDestinationAccountId,
+            amount: numAmount,
+            date: safeDate,
+            description: description.trim() || undefined,
+          },
+          clientOpId
         );
+
+        await saveOfflineTransaction({
+          id: clientOpId,
+          client_operation_id: clientOpId,
+          account_id: effectiveAccountId,
+          destination_account_id: effectiveDestinationAccountId,
+          amount: numAmount,
+          type: "TRANSFER",
+          currency: "AOA",
+          description: description.trim() || null,
+          transaction_date: safeDate || nowIso,
+          created_at: nowIso,
+          sync_status: "PENDING",
+        });
+
+        await adjustCachedWalletBalance(effectiveAccountId, -numAmount);
+        await adjustCachedWalletBalance(effectiveDestinationAccountId, numAmount);
+        setSuccessMessage(`Transferência de ${numAmount} Kz registada offline! Sincronizará assim que houver ligação.`);
       } else if (action === "GOAL") {
         if (!effectiveGoalId || !effectiveAccountId)
           throw new Error("Selecciona a meta e a carteira.");
-        await contributeToGoal(supabase, {
-          goalId: effectiveGoalId,
-          accountId: effectiveAccountId,
-          amount: numAmount,
-          date: safeDate,
-          description: description.trim() || undefined,
-        });
-        setSuccessMessage(`Poupança de ${numAmount} Kz adicionada à meta!`);
+
+        await enqueueOperation(
+          "CONTRIBUTE_GOAL",
+          {
+            goalId: effectiveGoalId,
+            accountId: effectiveAccountId,
+            amount: numAmount,
+            date: safeDate,
+            description: description.trim() || undefined,
+          },
+          clientOpId
+        );
+
+        await adjustCachedWalletBalance(effectiveAccountId, -numAmount);
+        setSuccessMessage(`Poupança de ${numAmount} Kz registada offline! Sincronizará assim que houver ligação.`);
       } else if (action === "NEW_DEBT") {
         if (!personName.trim()) throw new Error("Indica o nome da pessoa.");
-        if (!userId) throw new Error("Sessão inválida.");
-        await createDebt(supabase, {
-          user_id: userId,
-          person_name: personName.trim(),
-          type: debtType,
-          original_amount: numAmount,
-          due_date: safeDate ?? null,
-          description: description.trim() || null,
-        });
-        setSuccessMessage(`Dívida registada com sucesso!`);
+        const fallbackUserId = userId || "offline_user";
+
+        await enqueueOperation(
+          "CREATE_DEBT",
+          {
+            user_id: fallbackUserId,
+            person_name: personName.trim(),
+            type: debtType,
+            original_amount: numAmount,
+            due_date: safeDate ?? null,
+            description: description.trim() || null,
+          },
+          clientOpId
+        );
+
+        setSuccessMessage(`Dívida registada offline! Sincronizará assim que houver ligação.`);
       } else if (action === "PAY_DEBT") {
         if (!effectiveDebtId || !effectiveAccountId)
           throw new Error("Selecciona a dívida e a carteira.");
-        await payDebt(supabase, {
-          debtId: effectiveDebtId,
-          accountId: effectiveAccountId,
-          amount: numAmount,
-          date: safeDate,
-          description: description.trim() || undefined,
-        });
-        setSuccessMessage(`Pagamento de dívida de ${numAmount} Kz registado!`);
+
+        await enqueueOperation(
+          "PAY_DEBT",
+          {
+            debtId: effectiveDebtId,
+            accountId: effectiveAccountId,
+            amount: numAmount,
+            date: safeDate,
+            description: description.trim() || undefined,
+          },
+          clientOpId
+        );
+
+        await adjustCachedWalletBalance(effectiveAccountId, -numAmount);
+        setSuccessMessage(`Pagamento de ${numAmount} Kz registado offline! Sincronizará assim que houver ligação.`);
       } else if (action === "PROJECT") {
         if (!effectiveProjectId || !effectiveAccountId)
           throw new Error("Selecciona o projecto e a carteira.");
-        if (!userId) throw new Error("Sessão inválida.");
-        await createProjectTransaction(supabase, {
-          userId,
-          projectId: effectiveProjectId,
-          accountId: effectiveAccountId,
-          type: projectTxType,
-          amount: numAmount,
-          categoryId: effectiveCategoryId || null,
-          date: safeDate,
-          description: description.trim() || undefined,
-        });
-        setSuccessMessage(`Movimento do projecto registado com sucesso!`);
+        const fallbackUserId = userId || "offline_user";
+
+        await enqueueOperation(
+          "CREATE_PROJECT_TRANSACTION",
+          {
+            userId: fallbackUserId,
+            projectId: effectiveProjectId,
+            accountId: effectiveAccountId,
+            type: projectTxType,
+            amount: numAmount,
+            categoryId: effectiveCategoryId || null,
+            date: safeDate,
+            description: description.trim() || undefined,
+          },
+          clientOpId
+        );
+
+        if (projectTxType === "PROJECT_INCOME") {
+          await adjustCachedWalletBalance(effectiveAccountId, numAmount);
+        } else {
+          await adjustCachedWalletBalance(effectiveAccountId, -numAmount);
+        }
+
+        setSuccessMessage(`Movimento do projecto registado offline! Sincronizará assim que houver ligação.`);
+      }
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("kumbu_offline_tx_created"));
+      }
+    };
+
+    try {
+      const isActuallyOnline = getIsOnline() && (await checkRealConnectivity());
+
+      if (!isActuallyOnline) {
+        await handleOfflineSubmit();
+      } else {
+        const supabase = createClient();
+        try {
+          if (action === "INCOME") {
+            if (!effectiveAccountId || !effectiveCategoryId)
+              throw new Error("Selecciona a carteira e a categoria.");
+            await createIncome(supabase, {
+              accountId: effectiveAccountId,
+              amount: numAmount,
+              categoryId: effectiveCategoryId,
+              date: safeDate,
+              description: description.trim() || undefined,
+            });
+            setSuccessMessage(`Ganho de ${numAmount} Kz registado com sucesso!`);
+          } else if (action === "EXPENSE") {
+            if (!effectiveAccountId || !effectiveCategoryId)
+              throw new Error("Selecciona a carteira e a categoria.");
+            await createExpense(supabase, {
+              accountId: effectiveAccountId,
+              amount: numAmount,
+              categoryId: effectiveCategoryId,
+              date: safeDate,
+              description: description.trim() || undefined,
+            });
+            setSuccessMessage(`Gasto de ${numAmount} Kz registado com sucesso!`);
+          } else if (action === "TRANSFER") {
+            if (!effectiveAccountId || !effectiveDestinationAccountId)
+              throw new Error("Selecciona as contas de origem e destino.");
+            if (effectiveAccountId === effectiveDestinationAccountId)
+              throw new Error("A conta de destino não pode ser igual à de origem.");
+            await createTransfer(supabase, {
+              accountId: effectiveAccountId,
+              destinationAccountId: effectiveDestinationAccountId,
+              amount: numAmount,
+              date: safeDate,
+              description: description.trim() || undefined,
+            });
+            setSuccessMessage(
+              `Transferência de ${numAmount} Kz realizada com sucesso!`
+            );
+          } else if (action === "GOAL") {
+            if (!effectiveGoalId || !effectiveAccountId)
+              throw new Error("Selecciona a meta e a carteira.");
+            await contributeToGoal(supabase, {
+              goalId: effectiveGoalId,
+              accountId: effectiveAccountId,
+              amount: numAmount,
+              date: safeDate,
+              description: description.trim() || undefined,
+            });
+            setSuccessMessage(`Poupança de ${numAmount} Kz adicionada à meta!`);
+          } else if (action === "NEW_DEBT") {
+            if (!personName.trim()) throw new Error("Indica o nome da pessoa.");
+            if (!userId) throw new Error("Sessão inválida.");
+            await createDebt(supabase, {
+              user_id: userId,
+              person_name: personName.trim(),
+              type: debtType,
+              original_amount: numAmount,
+              due_date: safeDate ?? null,
+              description: description.trim() || null,
+            });
+            setSuccessMessage(`Dívida registada com sucesso!`);
+          } else if (action === "PAY_DEBT") {
+            if (!effectiveDebtId || !effectiveAccountId)
+              throw new Error("Selecciona a dívida e a carteira.");
+            await payDebt(supabase, {
+              debtId: effectiveDebtId,
+              accountId: effectiveAccountId,
+              amount: numAmount,
+              date: safeDate,
+              description: description.trim() || undefined,
+            });
+            setSuccessMessage(`Pagamento de dívida de ${numAmount} Kz registado!`);
+          } else if (action === "PROJECT") {
+            if (!effectiveProjectId || !effectiveAccountId)
+              throw new Error("Selecciona o projecto e a carteira.");
+            if (!userId) throw new Error("Sessão inválida.");
+            await createProjectTransaction(supabase, {
+              userId,
+              projectId: effectiveProjectId,
+              accountId: effectiveAccountId,
+              type: projectTxType,
+              amount: numAmount,
+              categoryId: effectiveCategoryId || null,
+              date: safeDate,
+              description: description.trim() || undefined,
+            });
+            setSuccessMessage(`Movimento do projecto registado com sucesso!`);
+          }
+
+          // Dispara sincronização em segundo plano caso existam itens pendentes
+          triggerSync().catch(() => {});
+        } catch (onlineErr: unknown) {
+          const errStr = onlineErr instanceof Error ? onlineErr.message : String(onlineErr);
+          const isNetworkFailure =
+            errStr.toLowerCase().includes("fetch") ||
+            errStr.toLowerCase().includes("network") ||
+            errStr.toLowerCase().includes("failed to fetch");
+
+          if (isNetworkFailure) {
+            console.warn("[QuickRegister] Falha de rede online, a guardar em fila offline:", errStr);
+            await handleOfflineSubmit();
+          } else {
+            throw onlineErr;
+          }
+        }
       }
 
       router.refresh();
       onSuccess?.();
       setTimeout(() => {
         onClose();
-      }, 600);
+      }, 750);
     } catch (err: unknown) {
       const msg =
         err instanceof Error

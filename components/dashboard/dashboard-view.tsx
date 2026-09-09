@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,8 @@ import { formatCurrency } from "@/lib/utils/currency";
 import { formatRelativeDate } from "@/lib/utils/date";
 import { useQuickAction } from "@/lib/context/quick-action-context";
 import { cn } from "@/lib/utils/cn";
+import { useOfflineSync } from "@/lib/offline/context/offline-sync-context";
+import { getOfflineTransactions, type OfflineTransaction } from "@/lib/offline";
 import type { FinancialDiaryEntry } from "@/lib/services/transactions";
 import type { Account } from "@/lib/services/accounts";
 import type { DailySummary, MonthlySummary, CategoryExpenseBreakdown } from "@/lib/services/reports";
@@ -68,6 +70,86 @@ export function DashboardView({
 
   const firstName = userName.split(" ")[0];
 
+  const { syncStatus, isOnline, pendingCount, lastSyncedAt } = useOfflineSync();
+  const [offlineTxs, setOfflineTxs] = useState<OfflineTransaction[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadOffline = async () => {
+      try {
+        const txs = await getOfflineTransactions();
+        if (isMounted) {
+          const pending = txs.filter(
+            (t) => t.sync_status === "PENDING" || t.sync_status === "SYNCING"
+          );
+          setOfflineTxs(pending);
+        }
+      } catch (err) {
+        console.error("Erro ao ler transações offline:", err);
+      }
+    };
+
+    loadOffline();
+
+    const handleCustomEvent = () => {
+      loadOffline();
+    };
+
+    window.addEventListener("kumbu_offline_tx_created", handleCustomEvent);
+    return () => {
+      isMounted = false;
+      window.removeEventListener("kumbu_offline_tx_created", handleCustomEvent);
+    };
+  }, [pendingCount, syncStatus]);
+
+  // Saldo ajustado com operações offline pendentes
+  const effectiveTotalBalance = useMemo(() => {
+    let delta = 0;
+    for (const tx of offlineTxs) {
+      if (tx.type === "INCOME") delta += tx.amount;
+      else if (tx.type === "EXPENSE" || tx.type === "GOAL" || tx.type === "DEBT") delta -= tx.amount;
+      else if (tx.type === "PROJECT") delta -= tx.amount;
+    }
+    return totalBalance + delta;
+  }, [totalBalance, offlineTxs]);
+
+  // Combina actividades recentes com itens pendentes locais no topo
+  const combinedRecentDiary = useMemo(() => {
+    const offlineMapped: (FinancialDiaryEntry & { isPendingOffline?: boolean })[] =
+      offlineTxs.map((t) => ({
+        id: t.id,
+        user_id: "",
+        account_id: t.account_id,
+        amount: t.amount,
+        type: (t.type === "INCOME"
+          ? "INCOME"
+          : t.type === "TRANSFER"
+          ? "TRANSFER"
+          : t.type === "GOAL"
+          ? "SAVING"
+          : "EXPENSE") as FinancialDiaryEntry["type"],
+        category_id: t.category_id ?? null,
+        destination_account_id: t.destination_account_id ?? null,
+        goal_id: null,
+        debt_id: null,
+        project_id: null,
+        transaction_date: t.transaction_date,
+        currency: t.currency ?? currency,
+        description: t.description ?? null,
+        created_at: t.created_at,
+        account_name: t.account_name || "Carteira",
+        destination_account_name: t.destination_account_name || "Carteira",
+        category_name: t.category_name || (t.type === "INCOME" ? "Ganho" : "Gasto"),
+        category_icon: null,
+        goal_name: null,
+        debt_person_name: null,
+        project_name: null,
+        isPendingOffline: true,
+      }));
+
+    return [...offlineMapped, ...recentDiary];
+  }, [offlineTxs, recentDiary]);
+
   const todayIncome = todaySummary?.daily_income ?? 0;
   const todayExpense = todaySummary?.daily_expense ?? 0;
   const todayNet = todaySummary?.daily_net ?? todayIncome - todayExpense;
@@ -78,9 +160,9 @@ export function DashboardView({
   const monthSaving = monthSummary?.saving ?? 0;
 
   const isZeroState =
-    totalBalance === 0 &&
+    effectiveTotalBalance === 0 &&
     accounts.length === 0 &&
-    recentDiary.length === 0 &&
+    combinedRecentDiary.length === 0 &&
     todayIncome === 0 &&
     todayExpense === 0;
 
@@ -151,14 +233,31 @@ export function DashboardView({
         <div className="pointer-events-none absolute -bottom-12 -left-6 h-36 w-36 rounded-full bg-kumbu-900/40" />
 
         <div className="relative">
-          <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-widest text-kumbu-300">
-            Saldo total
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-widest text-kumbu-300">
+              Saldo total
+            </p>
+            {(!isOnline || pendingCount > 0) && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-white/15 text-white backdrop-blur-xs border border-white/20">
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    !isOnline ? "bg-slate-300" : "bg-amber-400 animate-pulse"
+                  }`}
+                />
+                {!isOnline ? "Modo Offline" : "A sincronizar"}
+                {pendingCount > 0 && ` (${pendingCount})`}
+              </span>
+            )}
+          </div>
           <p className="mt-2 text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight tabular-nums truncate">
-            {formatCurrency(totalBalance, currency)}
+            {formatCurrency(effectiveTotalBalance, currency)}
           </p>
           <p className="mt-1 text-xs text-kumbu-400">
-            {activeAccounts.length > 0
+            {pendingCount > 0
+              ? `Saldo atualizado localmente (${pendingCount} pendente${
+                  pendingCount > 1 ? "s" : ""
+                })`
+              : activeAccounts.length > 0
               ? `Disponível em ${activeAccounts.length} carteira${
                   activeAccounts.length !== 1 ? "s" : ""
                 }`
@@ -419,7 +518,7 @@ export function DashboardView({
           )}
 
           {/* Recent activity */}
-          {recentDiary.length > 0 && (
+          {combinedRecentDiary.length > 0 && (
             <section className="space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-kumbu-800">Actividade Recente</h2>
@@ -433,11 +532,12 @@ export function DashboardView({
               </div>
 
               <div className="rounded-2xl border border-kumbu-100 bg-white divide-y divide-kumbu-50 overflow-hidden">
-                {recentDiary.slice(0, 6).map((entry, index) => {
+                {combinedRecentDiary.slice(0, 6).map((entry, index) => {
                   const isIncome =
                     entry.type === "INCOME" || entry.type === "PROJECT_INCOME";
                   const isTransfer = entry.type === "TRANSFER";
                   const isGoal = entry.type === "SAVING";
+                  const isPending = (entry as any).isPendingOffline;
 
                   const sign = isIncome ? "+" : isTransfer ? "" : "-";
                   const amountColor = isIncome
@@ -446,7 +546,9 @@ export function DashboardView({
                     ? "text-kumbu-700"
                     : "text-rose-700";
 
-                  const dotColor = isIncome
+                  const dotColor = isPending
+                    ? "bg-amber-400 animate-pulse"
+                    : isIncome
                     ? "bg-emerald-500"
                     : isTransfer
                     ? "bg-sky-500"
@@ -462,10 +564,17 @@ export function DashboardView({
                       <div className="flex items-center gap-3 min-w-0">
                         <span className={`h-2 w-2 shrink-0 rounded-full ${dotColor}`} />
                         <div className="min-w-0">
-                          <p className="text-xs font-semibold text-kumbu-900 truncate">
-                            {entry.category_name ||
-                              (isTransfer ? "Transferência" : "Movimento")}
-                          </p>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="text-xs font-semibold text-kumbu-900 truncate">
+                              {entry.category_name ||
+                                (isTransfer ? "Transferência" : "Movimento")}
+                            </p>
+                            {isPending && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[9px] font-bold bg-amber-100 text-amber-800">
+                                Pendente
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[11px] text-kumbu-400 truncate">
                             {isTransfer
                               ? `${entry.account_name} → ${entry.destination_account_name}`
@@ -484,7 +593,7 @@ export function DashboardView({
                           )}
                         </p>
                         <p className="text-[10px] text-kumbu-400">
-                          {formatRelativeDate(entry.transaction_date)}
+                          {isPending ? "Agora mesmo" : formatRelativeDate(entry.transaction_date)}
                         </p>
                       </div>
                     </div>

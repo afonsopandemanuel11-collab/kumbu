@@ -7,6 +7,9 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { Icon } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/client";
 import { QuickActionProvider, useQuickAction } from "@/lib/context/quick-action-context";
+import { OfflineSyncProvider } from "@/lib/offline/context/offline-sync-context";
+import { SyncStatusBadge } from "@/components/pwa/sync-status-badge";
+import { PwaInstallPrompt } from "@/components/pwa/pwa-install-prompt";
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -50,8 +53,10 @@ function AppShellInner({ children, userName }: AppShellProps) {
             </p>
           </div>
 
-          {/* Actions */}
+          {/* Actions & Sync Status */}
           <div className="flex items-center gap-2">
+            <SyncStatusBadge />
+
             <button
               type="button"
               onClick={() => openQuickRegister("EXPENSE")}
@@ -81,14 +86,17 @@ function AppShellInner({ children, userName }: AppShellProps) {
       </div>
 
       <BottomNav />
+      <PwaInstallPrompt />
     </div>
   );
 }
 
 export function AppShell(props: AppShellProps) {
   return (
-    <QuickActionProvider>
-      <AppShellInner {...props} />
-    </QuickActionProvider>
+    <OfflineSyncProvider>
+      <QuickActionProvider>
+        <AppShellInner {...props} />
+      </QuickActionProvider>
+    </OfflineSyncProvider>
   );
 }

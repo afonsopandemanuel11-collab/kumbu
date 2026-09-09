@@ -24,6 +24,19 @@ function getFetchErrorDiagnostic(errOrError: unknown): string {
     (errOrError as { status?: number })?.status ||
     "";
 
+  const causeStr = String(cause || "").toLowerCase();
+  const errStr = String(errOrError || "").toLowerCase();
+
+  if (
+    causeStr.includes("enotfound") ||
+    causeStr.includes("econnrefused") ||
+    causeStr.includes("fetch failed") ||
+    errStr.includes("fetch failed") ||
+    errStr.includes("network")
+  ) {
+    return "Sem ligação à internet. Por favor, liga a tua internet para aceder à tua conta.";
+  }
+
   const hasKey = !!anonKey && anonKey.length > 5;
   return `Falha de ligação ao Supabase [Host: ${host} | Chave: ${hasKey ? "OK" : "Ausente"} | Causa: ${cause || "fetch failed"}]. Verifica as variáveis de ambiente na Vercel.`;
 }
