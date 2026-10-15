@@ -106,7 +106,11 @@ function DebtFormInner({
 
       router.refresh();
       onClose();
-    } catch {
+    } catch (cause) {
+      console.error(
+        `[DebtModal] ${debtToEdit ? "update" : "create"} failed`,
+        cause,
+      );
       setError("Não foi possível guardar a dívida. Tenta novamente.");
     } finally {
       setLoading(false);

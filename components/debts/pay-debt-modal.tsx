@@ -73,7 +73,8 @@ export function PayDebtModal({
 
       router.refresh();
       onClose();
-    } catch {
+    } catch (cause) {
+      console.error("[PayDebtModal] payment RPC failed", cause);
       setError("Não foi possível registar o pagamento. Tenta novamente.");
     } finally {
       setLoading(false);

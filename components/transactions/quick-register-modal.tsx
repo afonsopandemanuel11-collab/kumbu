@@ -630,10 +630,19 @@ function QuickRegisterFormInner({
         onClose();
       }, 750);
     } catch (err: unknown) {
+      const isSupabaseError =
+        typeof err === "object" && err !== null && "code" in err;
+
+      if (isSupabaseError) {
+        console.error("[QuickRegister] financial operation failed", err);
+      }
+
       const msg =
-        err instanceof Error
-          ? err.message
-          : "Não foi possível guardar este movimento. Tenta novamente.";
+        isSupabaseError
+          ? "Não foi possível guardar este movimento. Tenta novamente."
+          : err instanceof Error
+            ? err.message
+            : "Não foi possível guardar este movimento. Tenta novamente.";
       setError(msg);
     } finally {
       setLoading(false);
